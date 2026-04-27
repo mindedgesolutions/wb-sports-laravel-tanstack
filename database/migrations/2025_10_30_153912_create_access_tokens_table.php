@@ -1,0 +1,33 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('access_tokens', function (Blueprint $table) {
+            $table->id();
+            $table->string('jti')->unique();
+            $table->foreignId('user_id')->constrained('users')->index();
+            $table->string('dpop_jkt')->nullable()->index();
+            $table->timestamp('issued_at');
+            $table->timestamp('expires_at')->index();
+            $table->boolean('revoked')->default(false);
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('access_tokens');
+    }
+};
