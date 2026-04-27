@@ -65,8 +65,7 @@ class AssociationRequest extends FormRequest
             '*.max' => ':Attribute must not exceed :max characters',
             '*.url' => 'Invalid URL',
             '*.email' => 'Invalid email',
-            '*.image' => ':Attribute must be an image file',
-            '*.mimes' => ':Attribute must be a file of type: :values',
+            'newImg.image' => ':Attribute must be an image file',
             'newImg.mimes' => ':Attribute must be a file of type: :values',
             'newImg.max' => ':Attribute must not exceed :max kilobytes',
         ];

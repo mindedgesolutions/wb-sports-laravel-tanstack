@@ -7,6 +7,7 @@ use App\Http\Requests\Sports\AssociationRequest;
 use App\Models\SpAssociation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -76,7 +77,7 @@ class AssociationController extends Controller
     {
         $data = SpAssociation::findOrFail($id);
 
-        SpAssociation::create([
+        SpAssociation::whereId($id)->update([
             'name' => trim($request->name),
             'slug' => Str::slug($request->name),
             'address' => $request->address ? trim($request->address) : null,
@@ -117,7 +118,7 @@ class AssociationController extends Controller
     {
         $data = SpAssociation::findOrFail($id);
 
-        if ($data->logo) {
+        if ($data) {
             $deletePath = str_replace('/storage', '', $data->logo);
             if (Storage::disk('public')->exists($deletePath)) {
                 Storage::disk('public')->delete($deletePath);
