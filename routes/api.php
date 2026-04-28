@@ -326,6 +326,14 @@ Route::middleware(['cookie.auth', 'auth:api'])->prefix('sports')->group(function
                 ->parameters(['' => 'id'])
                 ->except(['show']);
         });
+
+        // prefix: /sports/info-about/fifa
+        Route::prefix('fifa')->group(function () {
+            Route::put('toggle/{id}', [FifaController::class, 'toggle']);
+            Route::post('photos/{id}', [FifaController::class, 'upload']);
+            Route::apiResource('', FifaController::class)
+                ->parameters(['' => 'id']);
+        });
     });
 
     Route::controller(PhotoGalleryController::class)->prefix('photo-galleries')->group(function () {
@@ -350,13 +358,13 @@ Route::middleware(['cookie.auth', 'auth:api'])->prefix('sports')->group(function
         Route::put('activate/{id}', 'activate');
     });
 
-    Route::apiResource('fifa', FifaController::class)->except(['show']);
-    Route::controller(FifaController::class)->prefix('fifa')->group(function () {
-        Route::put('activate/{id}', 'activate');
-        Route::get('single/{id}', 'single');
-        Route::post('images/{id}', 'storeImages');
-        Route::delete('/images/{id}', 'deleteImage');
-    });
+    // Route::apiResource('fifa', FifaController::class)->except(['show']);
+    // Route::controller(FifaController::class)->prefix('fifa')->group(function () {
+    //     Route::put('activate/{id}', 'activate');
+    //     Route::get('single/{id}', 'single');
+    //     Route::post('images/{id}', 'storeImages');
+    //     Route::delete('/images/{id}', 'deleteImage');
+    // });
 
     Route::apiResource('sports-policies', SportPolicyController::class)->except(['show', 'update']);
     Route::controller(SportPolicyController::class)->prefix('sports-policies')->group(function () {

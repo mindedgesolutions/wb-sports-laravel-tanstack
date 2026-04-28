@@ -130,7 +130,7 @@ class StadiumController extends Controller
 
     // ------------------------------------------------
 
-    public function show($id)
+    public function show(String $id)
     {
         $data = SpStadium::with([
             'stadiumDetails',
