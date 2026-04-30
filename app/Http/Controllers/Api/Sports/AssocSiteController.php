@@ -13,9 +13,22 @@ class AssocSiteController extends Controller
 {
     public function index()
     {
-        $data = SpAssocSite::orderBy('id', 'desc')->paginate(10);
+        $search = request()->query('search');
 
-        return response()->json(['data' => $data], Response::HTTP_OK);
+        $data = SpAssocSite::when($search, function ($query, $search) {
+            $query->where('title', 'ILIKE', "%{$search}%");
+        })
+            ->orderBy('id', 'desc')
+            ->paginate(10);
+
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total()
+            ]
+        ], Response::HTTP_OK);
     }
 
     // ----------------------------------------
@@ -88,9 +101,9 @@ class AssocSiteController extends Controller
 
     // ----------------------------------------
 
-    public function activate(Request $request, string $id)
+    public function toggle(Request $request, string $id)
     {
-        SpAssocSite::whereId($id)->update(['is_active' => $request->is_active]);
+        SpAssocSite::whereId($id)->update(['is_active' => $request->checked]);
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }

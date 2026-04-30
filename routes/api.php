@@ -342,6 +342,14 @@ Route::middleware(['cookie.auth', 'auth:api'])->prefix('sports')->group(function
                 ->parameters(['' => 'id'])
                 ->except(['show']);
         });
+
+        // prefix: /sports/info-about/assoc-sites
+        Route::prefix('assoc-sites')->group(function () {
+            Route::put('toggle/{id}', [AssocSiteController::class, 'toggle']);
+            Route::apiResource('', AssocSiteController::class)
+                ->parameters(['' => 'id'])
+                ->except(['show']);
+        });
     });
 
     Route::controller(PhotoGalleryController::class)->prefix('photo-galleries')->group(function () {
@@ -365,9 +373,6 @@ Route::middleware(['cookie.auth', 'auth:api'])->prefix('sports')->group(function
         Route::post('update/{id}', 'update');
         Route::put('activate/{id}', 'activate');
     });
-
-    Route::apiResource('assoc-sites', AssocSiteController::class)->except(['show']);
-    Route::put('assoc-sites/activate/{id}', [AssocSiteController::class, 'activate']);
 
     Route::apiResource('rti-notices', RtiNoticeController::class)->except(['show', 'update']);
     Route::controller(RtiNoticeController::class)->prefix('rti-notices')->group(function () {
