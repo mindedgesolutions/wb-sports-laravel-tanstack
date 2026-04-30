@@ -16,15 +16,32 @@ class SportPolicyController extends Controller
 {
     public function index()
     {
-        $data = SpSportPolicy::orderBy('name')->paginate(10);
+        $search = request()->query('search');
 
-        return response()->json(['data' => $data], Response::HTTP_OK);
+        $data = SpSportPolicy::when($search, function ($query, $search) {
+            $query->where('name', 'ILIKE', "%{$search}%");
+        })
+            ->orderBy('name')
+            ->paginate(10);
+
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total()
+            ]
+        ], Response::HTTP_OK);
     }
 
     // --------------------------------------------
 
     public function store(Request $request)
     {
+        if (!$request->hasFile('newFile')) {
+            $data['newFile'] = null;
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'max:255', function ($attribute, $value, $fail) {
                 $inputSlug = Str::slug($value);
@@ -32,11 +49,13 @@ class SportPolicyController extends Controller
                     $fail('Policy exists');
                 }
             }],
-            'file' => 'required|array',
-            'file.*' => 'required|file|mimes:pdf|max:5120',
+            'newFile' => 'required|file|mimes:pdf|max:10240',
         ], [
             '*.required' => ':Attribute is required.',
-            '*.max' => 'File size cannot exceed 5MB.',
+            '*.max' => 'File size cannot exceed 10MB.',
+        ], [
+            'name' => 'Policy name',
+            'newFile' => 'Policy attachment'
         ]);
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -49,8 +68,8 @@ class SportPolicyController extends Controller
                 'slug' => Str::slug($request->name),
             ]);
 
-            if ($request->hasFile('file')) {
-                $file = $request->file('file')[0];
+            if ($request->hasFile('newFile')) {
+                $file = $request->file('newFile');
                 $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
                 $directory = 'uploads/sports/sports-policies';
                 $fileOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -81,6 +100,10 @@ class SportPolicyController extends Controller
 
     public function update(Request $request, string $id)
     {
+        if (!$request->hasFile('newFile')) {
+            $data['newFile'] = null;
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'max:255', function ($attribute, $value, $fail) use ($id) {
                 $inputSlug = Str::slug($value);
@@ -91,11 +114,13 @@ class SportPolicyController extends Controller
                     $fail('Policy exists');
                 }
             }],
-            'file' => 'nullable|array',
-            'file.*' => 'nullable|file|mimes:pdf|max:5120',
+            'newFile' => 'required|file|mimes:pdf|max:10240',
         ], [
             '*.required' => ':Attribute is required.',
-            '*.max' => 'File size cannot exceed 5MB.',
+            '*.max' => 'File size cannot exceed 10MB.',
+        ], [
+            'name' => 'Policy name',
+            'newFile' => 'Policy attachment'
         ]);
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -110,8 +135,8 @@ class SportPolicyController extends Controller
                 'slug' => Str::slug($request->name),
             ]);
 
-            if ($request->hasFile('file') && $request->file('file')[0]->getSize() > 0) {
-                $file = $request->file('file')[0];
+            if ($request->hasFile('newFile') && $request->file('newFile')->getSize() > 0) {
+                $file = $request->file('newFile');
                 $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
                 $directory = 'uploads/sports/sports-policies';
                 $fileOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -163,10 +188,10 @@ class SportPolicyController extends Controller
 
     // --------------------------------------------
 
-    public function activate(Request $request, string $id)
+    public function toggle(Request $request, string $id)
     {
         SpSportPolicy::whereId($id)->update([
-            'is_active' => $request->is_active,
+            'is_active' => $request->checked,
         ]);
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }

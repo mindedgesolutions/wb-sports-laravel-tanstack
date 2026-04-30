@@ -71,6 +71,8 @@ class KeyPersonnelController extends Controller
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
+        $filePath = '';
+
         if ($request->hasFile('newImg') && $request->file('newImg')->getSize() > 0) {
             $file = $request->file('newImg');
             $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
@@ -133,6 +135,8 @@ class KeyPersonnelController extends Controller
         }
 
         $data = SpKeyPersonnel::findOrFail($id);
+
+        $filePath = '';
 
         if ($request->hasFile('newImg') && $request->file('newImg')->getSize() > 0) {
             $file = $request->file('newImg');

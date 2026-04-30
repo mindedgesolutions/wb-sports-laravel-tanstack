@@ -121,6 +121,23 @@ class FifaController extends Controller
         try {
             DB::beginTransaction();
 
+            $keepImages = explode(',', $request->existingGalleryImg);
+            $dbPhotos = SpFifa::with('photos')->findOrFail($id);
+
+            if ($dbPhotos->photos->isNotEmpty()) {
+                $dbPhotos->photos->each(
+                    function ($img) use ($keepImages) {
+                        if (!in_array($img->image_path, $keepImages)) {
+                            $deletePath = str_replace('/storage', '', $img->image_path);
+                            if (Storage::disk('public')->exists($deletePath)) {
+                                Storage::disk('public')->delete($deletePath);
+                            }
+                            $img->delete();
+                        }
+                    }
+                );
+            }
+
             $data = SpFifa::whereId($id)->update([
                 'name' => trim($request->title),
                 'slug' => Str::slug($request->title),
