@@ -12,91 +12,187 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 class PhotoGalleryController extends Controller
 {
-    public function index($category)
+    public function index()
     {
+        $search = request()->query('search');
+
         $data = SpPhotoGallery::withCount('photos')
-            ->where('category', $category)
+            ->when($search, function ($query, $search) {
+                $query->where('title', 'ILIKE', "%{$search}%");
+            })
             ->orderBy('event_date')
             ->orderBy('title')
             ->paginate(10);
 
-        return response()->json(['data' => $data], Response::HTTP_OK);
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total()
+            ]
+        ], Response::HTTP_OK);
     }
 
     // ------------------------------------------
 
     public function store(PhotoGalleryRequest $request)
     {
-        $data = SpPhotoGallery::create([
-            'category' => 'photo',
-            'title' => trim($request->title),
-            'slug' => Str::slug($request->title),
-            'description' => $request->description ? trim($request->description) : null,
-            'event_date' => $request->eventDate ? date('Y-m-d', strtotime($request->eventDate)) : null,
-        ]);
+        try {
+            DB::beginTransaction();
 
-        if ($request->hasFile('coverImg') && $request->file('coverImg')[0]->getSize() > 0) {
-            $file = $request->file('coverImg')[0];
-            $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
-            $directory = 'uploads/sports/photo-galleries';
+            $data = SpPhotoGallery::create([
+                'category' => 'photo',
+                'title' => trim($request->title),
+                'slug' => Str::slug($request->title),
+                'description' => $request->description ? trim($request->description) : null,
+                'event_date' => $request->eventDate ?? null,
+            ]);
 
-            if (!Storage::disk('public')->exists($directory)) {
-                Storage::disk('public')->makeDirectory($directory);
+            if ($request->file('coverImg') && $request->file('coverImg')->getSize() > 0) {
+                $file = $request->file('coverImg');
+                $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
+                $directory = 'uploads/sports/photo-galleries/' . $data->id;
+
+                if ($data->cover_img) {
+                    $deletePath = str_replace('/storage', '', $data->cover_img);
+                    if (Storage::disk('public')->exists($deletePath)) {
+                        Storage::disk('public')->delete($deletePath);
+                    }
+                }
+
+                if (!Storage::disk('public')->exists($directory)) {
+                    Storage::disk('public')->makeDirectory($directory);
+                }
+                $filePath = $file->storeAs($directory, $filename, 'public');
+
+                $data->cover_img = Storage::url($filePath);
+                $data->save();
             }
-            $filePath = $file->storeAs($directory, $filename, 'public');
 
-            SpPhotoGallery::whereId($data->id)
-                ->update(['cover_img' => Storage::url($filePath)]);
+            DB::commit();
+
+            return response()->json(['data' => $data], Response::HTTP_CREATED);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            Log::error($th->getMessage());
+            return response()->json(['message' => 'Server Error'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return response()->json(['data' => $data], Response::HTTP_CREATED);
     }
 
     // ------------------------------------------
 
-    public function update(PhotoGalleryRequest $request, $id)
+    public function upload(Request $request, string $id)
     {
-        $photoGallery = SpPhotoGallery::findOrFail($id);
+        try {
+            $photos = [];
 
-        SpPhotoGallery::whereId($id)->update([
-            'title' => trim($request->title),
-            'slug' => Str::slug($request->title),
-            'description' => $request->description ? trim($request->description) : null,
-            'event_date' => $request->eventDate ? date('Y-m-d', strtotime($request->eventDate)) : null,
-        ]);
+            DB::beginTransaction();
 
-        if ($request->hasFile('coverImg') && $request->file('coverImg')[0]->getSize() > 0) {
-            $file = $request->file('coverImg')[0];
-            $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
-            $directory = 'uploads/sports/photo-galleries';
+            if ($request->hasFile('galleryImg')) {
+                foreach ($request->file('galleryImg') as $file) {
+                    $filename = Str::ulid() . '.' . $file->extension();
+                    $directory = "uploads/sports/photo-galleries/{$id}";
 
-            if ($photoGallery) {
-                $deletePath = str_replace('/storage', '', $photoGallery->cover_img);
-                if (Storage::disk('public')->exists($deletePath)) {
-                    Storage::disk('public')->delete($deletePath);
+                    $filePath = $file->storeAs(
+                        $directory,
+                        $filename,
+                        'public'
+                    );
+
+                    $photos[] = [
+                        'gallery_id' => $id,
+                        'image_path' => Storage::url($filePath),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
                 }
             }
 
-            if (!Storage::disk('public')->exists($directory)) {
-                Storage::disk('public')->makeDirectory($directory);
+            if (!empty($photos)) {
+                SpPhoto::insert($photos);
             }
-            $filePath = $file->storeAs($directory, $filename, 'public');
 
-            SpPhotoGallery::whereId($id)
-                ->update(['cover_img' => Storage::url($filePath)]);
+            DB::commit();
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            Log::error($th->getMessage());
+            return response()->json(['message' => 'Server Error'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return response()->json(['data' => 'success'], Response::HTTP_OK);
     }
 
     // ------------------------------------------
 
-    public function destroy($id)
+    public function update(PhotoGalleryRequest $request, String $id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $keepImages = explode(',', $request->existingGalleryImg);
+            $data = SpPhotoGallery::with('photos')->findOrFail($id);
+
+            if ($data->photos->isNotEmpty()) {
+                $data->photos->each(
+                    function ($img) use ($keepImages) {
+                        if (!in_array($img->image_path, $keepImages)) {
+                            $deletePath = str_replace('/storage', '', $img->image_path);
+                            if (Storage::disk('public')->exists($deletePath)) {
+                                Storage::disk('public')->delete($deletePath);
+                            }
+                            $img->delete();
+                        }
+                    }
+                );
+            }
+
+            SpPhotoGallery::whereId($id)->update([
+                'title' => trim($request->title),
+                'slug' => Str::slug($request->title),
+                'description' => $request->description ? trim($request->description) : null,
+                'event_date' => $request->eventDate ?? null,
+            ]);
+
+            if ($request->file('coverImg') && $request->file('coverImg')->getSize() > 0) {
+                $file = $request->file('coverImg');
+                $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
+                $directory = 'uploads/sports/photo-galleries/' . $id;
+
+                if ($data->cover_img) {
+                    $deletePath = str_replace('/storage', '', $data->cover_img);
+                    if (Storage::disk('public')->exists($deletePath)) {
+                        Storage::disk('public')->delete($deletePath);
+                    }
+                }
+
+                if (!Storage::disk('public')->exists($directory)) {
+                    Storage::disk('public')->makeDirectory($directory);
+                }
+                $filePath = $file->storeAs($directory, $filename, 'public');
+
+                SpPhotoGallery::whereId($id)->update([
+                    'cover_img' => Storage::url($filePath)
+                ]);
+            }
+
+            $updated = SpPhotoGallery::with('photos')->findOrFail($id);
+
+            DB::commit();
+
+            return response()->json(['data' => $updated], Response::HTTP_OK);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            Log::error($th->getMessage());
+            return response()->json(['message' => 'Server Error'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // ------------------------------------------
+
+    public function destroy(String $id)
     {
         $photoGallery = SpPhotoGallery::findOrFail($id);
 
@@ -113,94 +209,19 @@ class PhotoGalleryController extends Controller
 
     // ------------------------------------------
 
-    public function activate(Request $request, $id)
+    public function toggle(Request $request, String $id)
     {
-        SpPhotoGallery::whereId($id)->update(['is_active' => $request->is_active]);
+        SpPhotoGallery::whereId($id)->update(['is_active' => $request->checked]);
 
         return response()->json(['data' => 'success'], Response::HTTP_OK);
     }
 
     // ------------------------------------------
 
-    public function single($id)
+    public function show(String $id)
     {
-        $data = SpPhotoGallery::whereId($id)->first();
+        $data = SpPhotoGallery::with('photos')->findOrFail($id);
 
         return PhotoGalleryResource::make($data);
-    }
-
-    // ------------------------------------------
-
-    public function storeImages(Request $request, $id)
-    {
-        $validator = Validator::make($request->all(), [
-            'images' => 'required|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:200',
-        ]);
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-        try {
-            DB::beginTransaction();
-
-            if ($request->hasFile('images')) {
-                foreach ($request->file('images') as $file) {
-                    $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
-                    $directory = 'uploads/sports/photo-galleries/gallery/' . $id;
-
-                    if (!Storage::disk('public')->exists($directory)) {
-                        Storage::disk('public')->makeDirectory($directory);
-                    }
-
-                    $filePath = $file->storeAs($directory, $filename, 'public');
-
-                    SpPhoto::create([
-                        'gallery_id' => $id,
-                        'image_path' => Storage::url($filePath),
-                    ]);
-                }
-            }
-
-            $updated = SpPhotoGallery::whereId($id)->first();
-
-            DB::commit();
-
-            return PhotoGalleryResource::make($updated);
-        } catch (\Throwable $th) {
-            Log::error($th->getMessage());
-            DB::rollBack();
-            return response()->json(['errors' => 'An error occurred while storing images.'], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // ------------------------------------------
-
-    public function deleteImage($id)
-    {
-        try {
-            DB::beginTransaction();
-
-            $galleryId = SpPhoto::whereId($id)->pluck('gallery_id')->first();
-
-            $image = SpPhoto::findOrFail($id);
-
-            $deletePath = str_replace('/storage', '', $image->image_path);
-
-            if (Storage::disk('public')->exists($deletePath)) {
-                Storage::disk('public')->delete($deletePath);
-            }
-
-            SpPhoto::whereId($id)->delete();
-
-            $updated = SpPhotoGallery::whereId($galleryId)->first();
-
-            DB::commit();
-
-            return PhotoGalleryResource::make($updated);
-        } catch (\Throwable $th) {
-            Log::error($th->getMessage());
-            DB::rollBack();
-            return response()->json(['errors' => 'An error occurred while deleting the image.'], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
     }
 }

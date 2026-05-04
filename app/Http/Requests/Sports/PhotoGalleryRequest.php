@@ -4,23 +4,14 @@ namespace App\Http\Requests\Sports;
 
 use App\Models\SpPhotoGallery;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class PhotoGalleryRequest extends FormRequest
 {
     public function authorize(): bool
     {
         return true;
-    }
-
-    public function prepareForValidation(): void
-    {
-        if ($this->eventDate && $this->eventDate !== '') {
-            $this->merge([
-                'eventDate' => Date::createFromFormat('d/m/Y', $this->eventDate)
-            ]);
-        }
     }
 
     public function rules(): array
@@ -37,9 +28,13 @@ class PhotoGalleryRequest extends FormRequest
                     $fail('Photo gallery exists.');
                 }
             }],
-            'eventDate' => 'required|date|before_or_equal:today',
-            'coverImg' => 'nullable|array',
-            'coverImg.*' => 'nullable|mimes:png,jpg,jpeg,webp|max:200',
+            'description' => ['nullable'],
+            'eventDate' => ['nullable', 'date', 'before_or_equal:today'],
+            'coverImg' => [
+                Rule::requiredIf(!$this->id),
+                'file',
+                'max:2048',
+            ],
         ];
     }
 }

@@ -352,16 +352,26 @@ Route::middleware(['cookie.auth', 'auth:api'])->prefix('sports')->group(function
         });
     });
 
-    Route::controller(PhotoGalleryController::class)->prefix('photo-galleries')->group(function () {
-        Route::get('/{category}', 'index');
-        Route::post('/', 'store');
-        Route::post('/update/{id}', 'update');
-        Route::delete('/{id}', 'destroy');
-        Route::put('activate/{id}', 'activate');
-        Route::get('/single/{id}', 'single');
-        Route::post('/images/{id}', 'storeImages');
-        Route::delete('/images/{id}', 'deleteImage');
+    Route::prefix('moments')->group(function () {
+        // prefix: /sports/moments/photo-galleries
+        Route::prefix('photo-galleries')->group(function () {
+            Route::put('toggle/{id}', [PhotoGalleryController::class, 'toggle']);
+            Route::post('photos/{id}', [PhotoGalleryController::class, 'upload']);
+            Route::apiResource('', PhotoGalleryController::class)
+                ->parameters(['' => 'id']);
+        });
     });
+
+    // Route::controller(PhotoGalleryController::class)->prefix('photo-galleries')->group(function () {
+    //     Route::get('/{category}', 'index');
+    //     Route::post('/', 'store');
+    //     Route::post('/update/{id}', 'update');
+    //     Route::delete('/{id}', 'destroy');
+    //     Route::put('activate/{id}', 'activate');
+    //     Route::get('/single/{id}', 'single');
+    //     Route::post('/images/{id}', 'storeImages');
+    //     Route::delete('/images/{id}', 'deleteImage');
+    // });
 
     Route::apiResource('amphan-photos', AmphanPhotoController::class)->except(['show', 'update']);
     Route::post('amphan-photos/update/{id}', [AmphanPhotoController::class, 'update']);
