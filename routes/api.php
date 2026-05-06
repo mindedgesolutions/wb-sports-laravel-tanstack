@@ -360,23 +360,17 @@ Route::middleware(['cookie.auth', 'auth:api'])->prefix('sports')->group(function
             Route::apiResource('', PhotoGalleryController::class)
                 ->parameters(['' => 'id']);
         });
-    });
 
-    // Route::controller(PhotoGalleryController::class)->prefix('photo-galleries')->group(function () {
-    //     Route::get('/{category}', 'index');
-    //     Route::post('/', 'store');
-    //     Route::post('/update/{id}', 'update');
-    //     Route::delete('/{id}', 'destroy');
-    //     Route::put('activate/{id}', 'activate');
-    //     Route::get('/single/{id}', 'single');
-    //     Route::post('/images/{id}', 'storeImages');
-    //     Route::delete('/images/{id}', 'deleteImage');
-    // });
+        // prefix: /sports/moments/audio-visuals
+        Route::prefix('audio-visuals')->group(function () {
+            Route::apiResource('', AudioVisualController::class)
+                ->parameters(['' => 'id'])
+                ->except(['show']);
+        });
+    });
 
     Route::apiResource('amphan-photos', AmphanPhotoController::class)->except(['show', 'update']);
     Route::post('amphan-photos/update/{id}', [AmphanPhotoController::class, 'update']);
-
-    Route::apiResource('audio-visuals', AudioVisualController::class)->except(['show']);
 
     Route::apiResource('bulletins', BulletinController::class)->except(['show', 'update']);
     Route::controller(BulletinController::class)->prefix('bulletins')->group(function () {

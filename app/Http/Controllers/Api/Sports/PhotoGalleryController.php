@@ -194,15 +194,11 @@ class PhotoGalleryController extends Controller
 
     public function destroy(String $id)
     {
-        $photoGallery = SpPhotoGallery::findOrFail($id);
+        $directory = 'uploads/sports/photo-galleries/' . $id;
+        Storage::disk('public')->deleteDirectory($directory);
 
-        if ($photoGallery->cover_img) {
-            $deletePath = str_replace('/storage', '', $photoGallery->cover_img);
-            if (Storage::disk('public')->exists($deletePath)) {
-                Storage::disk('public')->delete($deletePath);
-            }
-        }
-        $photoGallery->delete();
+        SpPhoto::where('gallery_id')->delete();
+        SpPhotoGallery::whereId($id)->delete();
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }
