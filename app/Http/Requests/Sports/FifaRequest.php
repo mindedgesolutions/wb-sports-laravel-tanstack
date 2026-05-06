@@ -5,7 +5,6 @@ namespace App\Http\Requests\Sports;
 use App\Models\SpFifa;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 class FifaRequest extends FormRequest
 {

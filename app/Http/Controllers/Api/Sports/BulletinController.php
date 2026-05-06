@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SpBulletin;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -15,25 +15,34 @@ class BulletinController extends Controller
 {
     public function index()
     {
-        $data = SpBulletin::orderBy('event_date')->paginate(10);
+        $search = request()->query('search');
 
-        return response()->json(['data' => $data], Response::HTTP_OK);
+        $data = SpBulletin::when($search, function ($query, $search) {
+            $query->where('name', 'ILIKE', "%{$search}%");
+        })
+            ->orderBy('id', 'desc')
+            ->paginate(10);
+
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total()
+            ]
+        ], Response::HTTP_OK);
     }
 
     // -------------------------------------------
 
     public function store(Request $request)
     {
-        $data = $request->all();
-        $data['eventDate'] = $request->eventDate
-            ? Date::createFromFormat('d/m/Y', $request->eventDate)
-            : null;
         $validator = Validator::make($request->all(), [
             'name' => 'nullable|max:255',
             'eventDate' => 'nullable|before_or_equal:today',
-            'file' => 'required|array',
-            'file.*' => 'required|file|max:10240',
+            'newFile' => 'required|file|max:10240',
         ]);
+
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
@@ -41,11 +50,11 @@ class BulletinController extends Controller
         $data = SpBulletin::create([
             'name' => $request->name ? trim($request->name) : null,
             'slug' => $request->name ? Str::slug($request->name) : null,
-            'event_date' => $data['eventDate'] ? $data['eventDate']->format('Y-m-d') : null,
+            'event_date' => $data->eventDate ?? null,
         ]);
 
-        if ($request->hasFile('file') && $request->file('file')[0]->getSize() > 0) {
-            $file = $request->file('file')[0];
+        if ($request->hasFile('newFile') && $request->file('newFile')->getSize() > 0) {
+            $file = $request->file('newFile');
             $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
             $directory = 'uploads/sports/bulletins';
 
@@ -64,14 +73,12 @@ class BulletinController extends Controller
 
     public function update(Request $request, string $id)
     {
-        $data = $request->all();
-        $data['eventDate'] = $request->eventDate
-            ? Date::createFromFormat('d/m/Y', $request->eventDate)
-            : null;
         $validator = Validator::make($request->all(), [
             'name' => 'nullable|max:255',
             'eventDate' => 'nullable|before_or_equal:today',
+            'newFile' => 'nullable|max:10240',
         ]);
+
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
@@ -81,11 +88,11 @@ class BulletinController extends Controller
         SpBulletin::whereId($id)->update([
             'name' => $request->name ? trim($request->name) : null,
             'slug' => $request->name ? Str::slug($request->name) : null,
-            'event_date' => $data['eventDate'] ? $data['eventDate']->format('Y-m-d') : null,
+            'event_date' => $request->eventDate ?? null,
         ]);
 
-        if ($request->hasFile('file') && $request->file('file')[0]->getSize() > 0) {
-            $file = $request->file('file')[0];
+        if ($request->hasFile('newFile') && $request->file('newFile')->getSize() > 0) {
+            $file = $request->file('newFile');
             $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
             $directory = 'uploads/sports/bulletins';
 
@@ -129,9 +136,9 @@ class BulletinController extends Controller
 
     // -------------------------------------------
 
-    public function activate(Request $request, $id)
+    public function toggle(Request $request, String $id)
     {
-        SpBulletin::whereId($id)->update(['is_active' => $request->is_active]);
+        SpBulletin::whereId($id)->update(['is_active' => $request->checked]);
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }

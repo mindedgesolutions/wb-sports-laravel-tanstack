@@ -88,7 +88,7 @@ class AudioVisualController extends Controller
         }
 
         SpAudioVisual::whereId($id)->update([
-            'video_link' => $request->videoLink,
+            'video_link' => $request->url,
             'title' => $request->title ? trim($request->title) : null
         ]);
 

@@ -367,16 +367,18 @@ Route::middleware(['cookie.auth', 'auth:api'])->prefix('sports')->group(function
                 ->parameters(['' => 'id'])
                 ->except(['show']);
         });
+
+        // prefix: /sports/moments/bulletins
+        Route::prefix('bulletins')->group(function () {
+            Route::put('toggle/{id}', [BulletinController::class, 'toggle']);
+            Route::apiResource('', BulletinController::class)
+                ->parameters(['' => 'id'])
+                ->except(['show']);
+        });
     });
 
     Route::apiResource('amphan-photos', AmphanPhotoController::class)->except(['show', 'update']);
     Route::post('amphan-photos/update/{id}', [AmphanPhotoController::class, 'update']);
-
-    Route::apiResource('bulletins', BulletinController::class)->except(['show', 'update']);
-    Route::controller(BulletinController::class)->prefix('bulletins')->group(function () {
-        Route::post('update/{id}', 'update');
-        Route::put('activate/{id}', 'activate');
-    });
 
     Route::apiResource('rti-notices', RtiNoticeController::class)->except(['show', 'update']);
     Route::controller(RtiNoticeController::class)->prefix('rti-notices')->group(function () {
