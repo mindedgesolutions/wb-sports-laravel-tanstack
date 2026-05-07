@@ -14,9 +14,22 @@ class AmphanPhotoController extends Controller
 {
     public function index()
     {
-        $data = SpAmphanPhoto::orderBy('id', 'desc')->get();
+        $search = request()->query('search');
 
-        return response()->json(['data' => $data], Response::HTTP_OK);
+        $data = SpAmphanPhoto::when($search, function ($query, $search) {
+            $query->when('title', 'ILIKE', "%{$search}%");
+        })
+            ->orderBy('id', 'desc')
+            ->paginate(9);
+
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total()
+            ]
+        ], Response::HTTP_OK);
     }
 
     // -------------------------------------------
@@ -24,15 +37,16 @@ class AmphanPhotoController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'image' => 'required|array',
-            'image.*' => 'required|mimes:png,jpg,jpeg,webp|max:200',
+            'newImage' => 'required|mimes:png,jpg,jpeg,webp|max:5120',
             'title' => 'nullable|max:255'
         ]);
+
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-        if ($request->hasFile('image') && $request->file('image')[0]->getSize() > 0) {
-            $file = $request->file('image')[0];
+
+        if ($request->hasFile('newImage') && $request->file('newImage')->getSize() > 0) {
+            $file = $request->file('newImage');
             $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
             $directory = 'uploads/sports/photo-galleries/amphan';
 
@@ -52,13 +66,13 @@ class AmphanPhotoController extends Controller
 
     // -------------------------------------------
 
-    public function update(Request $request, $id)
+    public function update(Request $request, String $id)
     {
         $validator = Validator::make($request->all(), [
-            'image' => 'nullable|array',
-            'image.*' => 'nullable|mimes:png,jpg,jpeg,webp|max:200',
+            'newImage' => 'nullable|mimes:png,jpg,jpeg,webp|max:5120',
             'title' => 'nullable|max:255'
         ]);
+
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
@@ -69,8 +83,8 @@ class AmphanPhotoController extends Controller
             'title' => $request->title ? trim($request->title) : null,
         ]);
 
-        if ($request->hasFile('image') && $request->file('image')[0]->getSize() > 0) {
-            $file = $request->file('image')[0];
+        if ($request->hasFile('newImage') && $request->file('newImage')->getSize() > 0) {
+            $file = $request->file('newImage')[0];
             $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
             $directory = 'uploads/sports/photo-galleries/amphan';
 

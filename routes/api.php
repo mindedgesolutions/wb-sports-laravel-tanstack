@@ -375,10 +375,14 @@ Route::middleware(['cookie.auth', 'auth:api'])->prefix('sports')->group(function
                 ->parameters(['' => 'id'])
                 ->except(['show']);
         });
-    });
 
-    Route::apiResource('amphan-photos', AmphanPhotoController::class)->except(['show', 'update']);
-    Route::post('amphan-photos/update/{id}', [AmphanPhotoController::class, 'update']);
+        // prefix: /sports/moments/amphan-photos
+        Route::prefix('amphan-photos')->group(function () {
+            Route::apiResource('', AmphanPhotoController::class)
+                ->parameters(['' => 'id'])
+                ->except(['show']);
+        });
+    });
 
     Route::apiResource('rti-notices', RtiNoticeController::class)->except(['show', 'update']);
     Route::controller(RtiNoticeController::class)->prefix('rti-notices')->group(function () {
