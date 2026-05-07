@@ -16,11 +16,23 @@ class RtiNoticeController extends Controller
 {
     public function index()
     {
-        $data = SpRtiNotice::orderBy('start_date', 'desc')
+        $search = request()->query('search');
+
+        $data = SpRtiNotice::when($search, function ($query, $search) {
+            $query->where('notice_no', 'ILIKE', "%{$search}%")
+                ->orWhere('subject', 'ILIKE', "%{$search}%");
+        })
             ->orderBy('id', 'desc')
             ->paginate(10);
 
-        return response()->json(['data' => $data], Response::HTTP_OK);
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total()
+            ]
+        ], Response::HTTP_OK);
     }
 
     // -----------------------------------------------
@@ -34,12 +46,12 @@ class RtiNoticeController extends Controller
                 'notice_no' => trim($request->noticeNo),
                 'subject' => trim($request->subject),
                 'is_new' => $request->isNew === 'true' ? true : false,
-                'start_date' => $request->startDate ? date('Y-m-d', strtotime($request->startDate)) : null,
-                'end_date' => $request->endDate ? date('Y-m-d', strtotime($request->endDate)) : null,
+                'start_date' => $request->startDate ?? null,
+                'end_date' => $request->endDate ?? null,
             ]);
 
-            if ($request->hasFile('file')) {
-                $file = $request->file('file')[0];
+            if ($request->hasFile('newFile')) {
+                $file = $request->file('newFile');
                 $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
                 $directory = 'uploads/sports/rti';
                 $fileOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -77,12 +89,12 @@ class RtiNoticeController extends Controller
                 'notice_no' => trim($request->noticeNo),
                 'subject' => trim($request->subject),
                 'is_new' => $request->isNew === 'true' ? true : false,
-                'start_date' => $request->startDate ? date('Y-m-d', strtotime($request->startDate)) : null,
-                'end_date' => $request->endDate ? date('Y-m-d', strtotime($request->endDate)) : null,
+                'start_date' => $request->startDate ?? null,
+                'end_date' => $request->endDate ?? null,
             ]);
 
-            if ($request->hasFile('file') && $request->file('file')[0]->getSize() > 0) {
-                $file = $request->file('file')[0];
+            if ($request->hasFile('newFile') && $request->file('newFile')->getSize() > 0) {
+                $file = $request->file('newFile');
                 $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
                 $directory = 'uploads/sports/rti';
                 $fileOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -143,9 +155,9 @@ class RtiNoticeController extends Controller
 
     // -----------------------------------------------
 
-    public function activate(Request $request, string $id)
+    public function toggle(Request $request, string $id)
     {
-        SpRtiNotice::whereId($id)->update(['is_active' => $request->is_active]);
+        SpRtiNotice::whereId($id)->update(['is_active' => $request->checked]);
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }

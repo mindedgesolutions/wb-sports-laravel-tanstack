@@ -4,7 +4,6 @@ namespace App\Http\Requests\Sports;
 
 use App\Models\SpRtiNotice;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Date;
 use Illuminate\Validation\Rule;
 
 class RtiNoticeRequest extends FormRequest
@@ -15,14 +14,6 @@ class RtiNoticeRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
-    }
-
-    public function prepareForValidation(): void
-    {
-        $this->merge([
-            'startDate' => $this->startDate ? Date::createFromFormat('d/m/Y', $this->startDate) : null,
-            'endDate' => $this->endDate ? Date::createFromFormat('d/m/Y', $this->endDate) : null,
-        ]);
     }
 
     public function rules(): array
@@ -41,8 +32,7 @@ class RtiNoticeRequest extends FormRequest
             'subject' => 'required',
             'startDate' => 'nullable|date',
             'endDate' => 'nullable|date|after_or_equal:startDate',
-            'file' => ['nullable', 'array', Rule::requiredIf(!$this->id)],
-            'file.*' => ['nullable', Rule::requiredIf(!$this->id), 'max:2048'],
+            'newFile' => ['nullable', Rule::requiredIf(!$this->id), 'max:10240'],
         ];
     }
 
@@ -51,9 +41,9 @@ class RtiNoticeRequest extends FormRequest
         return [
             'noticeNo' => 'RTI notice no.',
             'subject' => 'Subject',
-            'startDate' => 'Start Date',
-            'endDate' => 'End Date',
-            'file' => 'File',
+            'startDate' => 'Start date',
+            'endDate' => 'End date',
+            'newFile' => 'Attachment',
         ];
     }
 
