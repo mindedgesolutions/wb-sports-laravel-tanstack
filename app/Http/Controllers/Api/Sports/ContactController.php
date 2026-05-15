@@ -67,16 +67,16 @@ class ContactController extends Controller
 
     // --------------------------------------------
 
-    public function activate(Request $request, string $id)
+    public function toggle(Request $request, string $id)
     {
-        SpContact::whereId($id)->update(['is_active' => $request->is_active]);
+        SpContact::whereId($id)->update(['is_active' => $request->checked]);
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }
 
     // --------------------------------------------
 
-    public function contactsSetOrder(Request $request)
+    public function sort(Request $request)
     {
         foreach ($request->all() as $key => $value) {
             SpContact::where('id', $value['id'])->update(['show_order' => $key]);

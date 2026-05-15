@@ -394,9 +394,16 @@ Route::middleware(['cookie.auth', 'auth:api'])->prefix('sports')->group(function
         });
     });
 
-    Route::put('contacts/set-order', [ContactController::class, 'contactsSetOrder']);
-    Route::apiResource('contacts', ContactController::class)->except(['show']);
-    Route::put('contacts/activate/{id}', [ContactController::class, 'activate']);
+    Route::prefix('contact-us')->group(function () {
+        // prefix: /sports/contact-us/contact-us
+        Route::prefix('contact-us')->group(function () {
+            Route::put('toggle/{id}', [ContactController::class, 'toggle']);
+            Route::put('sort', [ContactController::class, 'contactsSetOrder']);
+            Route::apiResource('', ContactController::class)
+                ->parameters(['' => 'id'])
+                ->except(['show']);
+        });
+    });
 
     Route::apiResource('news-scroll', NewsScrollController::class)->except(['show', 'update']);
     Route::post('news-scroll/update/{id}', [NewsScrollController::class, 'update']);
