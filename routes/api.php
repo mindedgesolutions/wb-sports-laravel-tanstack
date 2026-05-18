@@ -449,4 +449,5 @@ Route::controller(SportsWebsiteController::class)->prefix('sports')->group(funct
 });
 // Sports app routes end -------------------------------
 
+Route::get('preview', [DownloadController::class, 'preview']);
 Route::get('download', [DownloadController::class, 'download']);
