@@ -18,13 +18,6 @@ class NewsScrollRequest extends FormRequest
         return true;
     }
 
-    public function prepareForValidation(): void
-    {
-        $this->merge([
-            'news_date' => $this->newsDate ? Date::createFromFormat('d/m/Y', $this->newsDate) : null,
-        ]);
-    }
-
     public function rules(): array
     {
         return [
@@ -37,8 +30,7 @@ class NewsScrollRequest extends FormRequest
                 }
             }],
             'news_date' => 'nullable|date|before_or_equal:today',
-            'file' => [Rule::requiredIf(!$this->id), 'nullable', 'array'],
-            'file.*' => 'nullable|max:1024',
+            'file' => [Rule::requiredIf(!$this->id), 'nullable', 'max:10240'],
         ];
     }
 

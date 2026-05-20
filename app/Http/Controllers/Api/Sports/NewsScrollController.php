@@ -7,7 +7,6 @@ use App\Http\Requests\Sports\NewsScrollRequest;
 use App\Models\SpNewsScroll;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 
@@ -15,11 +14,23 @@ class NewsScrollController extends Controller
 {
     public function index()
     {
-        $data = SpNewsScroll::orderBy('news_date', 'desc')
+        $search = request()->query('search');
+
+        $data = SpNewsScroll::when($search, function ($query, $search) {
+            $query->where('title', 'ILIKE', "%{$search}%")
+                ->orWhere('description', 'ILIKE', "%{$search}%");
+        })
             ->orderBy('id', 'desc')
             ->paginate(10);
 
-        return response()->json(['data' => $data], Response::HTTP_OK);
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total()
+            ]
+        ], Response::HTTP_OK);
     }
 
     // -------------------------------------------
@@ -30,11 +41,11 @@ class NewsScrollController extends Controller
             'title' => trim($request->title),
             'slug' => Str::slug($request->title),
             'description' => $request->description ? trim($request->description) : null,
-            'news_date' => $request->newsDate ? Date::createFromFormat('d/m/Y', $request->newsDate)->format('Y-m-d') : null,
+            'news_date' => $request->newsDate ?? null,
         ]);
 
-        if ($request->hasFile('file') && $request->file('file')[0]->getSize() > 0) {
-            $file = $request->file('file')[0];
+        if ($request->hasFile('newFile') && $request->file('newFile')->getSize() > 0) {
+            $file = $request->file('newFile');
             $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
             $directory = 'uploads/sports/news-scroll';
             $fileOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -62,11 +73,11 @@ class NewsScrollController extends Controller
             'title' => trim($request->title),
             'slug' => Str::slug($request->title),
             'description' => $request->description ? trim($request->description) : null,
-            'news_date' => $request->newsDate ? Date::createFromFormat('d/m/Y', $request->newsDate)->format('Y-m-d') : null,
+            'news_date' => $request->newsDate ?? null,
         ]);
 
-        if ($request->hasFile('file') && $request->file('file')[0]->getSize() > 0) {
-            $file = $request->file('file')[0];
+        if ($request->hasFile('newFile') && $request->file('newFile')->getSize() > 0) {
+            $file = $request->file('newFile');
             $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
             $directory = 'uploads/sports/news-scroll';
             $fileOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -110,9 +121,9 @@ class NewsScrollController extends Controller
 
     // -------------------------------------------
 
-    public function activate(Request $request, $id)
+    public function toggle(Request $request, String $id)
     {
-        SpNewsScroll::where('id', $id)->update(['is_active' => $request->is_active]);
+        SpNewsScroll::where('id', $id)->update(['is_active' => $request->checked]);
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }

@@ -405,9 +405,15 @@ Route::middleware(['cookie.auth', 'auth:api'])->prefix('sports')->group(function
         });
     });
 
-    Route::apiResource('news-scroll', NewsScrollController::class)->except(['show', 'update']);
-    Route::post('news-scroll/update/{id}', [NewsScrollController::class, 'update']);
-    Route::post('news-scroll/activate/{id}', [NewsScrollController::class, 'activate']);
+    Route::prefix('news-scroll')->group(function () {
+        // prefix: /sports/news-scroll/news-scroll
+        Route::prefix('news-scroll')->group(function () {
+            Route::put('toggle/{id}', [NewsScrollController::class, 'toggle']);
+            Route::apiResource('', NewsScrollController::class)
+                ->parameters(['' => 'id'])
+                ->except(['show']);
+        });
+    });
 });
 Route::post('sports/send-feedback', [FeedbackController::class, 'sendFeedback']);
 // Sports app routes end -------------------------------

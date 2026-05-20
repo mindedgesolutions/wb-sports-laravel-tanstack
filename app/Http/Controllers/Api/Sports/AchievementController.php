@@ -7,6 +7,7 @@ use App\Http\Requests\Sports\SpAchievementRequest;
 use App\Models\SpAchievement;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class AchievementController extends Controller
@@ -54,7 +55,7 @@ class AchievementController extends Controller
             'title' => trim($request->title),
             'slug' => Str::slug($request->title),
             'description' => $request->description ? trim($request->description) : null,
-            'achievement_date' => $request->achievementDate,
+            'achievement_date' => $request->achievementDate ?? null,
         ]);
 
         return response()->json('success', Response::HTTP_OK);
@@ -73,9 +74,7 @@ class AchievementController extends Controller
 
     public function toggle(Request $request, string $id)
     {
-        $achievement = SpAchievement::whereId($id)->update([
-            'is_active' => $request->checked,
-        ]);
+        SpAchievement::whereId($id)->update(['is_active' => $request->checked]);
 
         return response()->json('success', Response::HTTP_OK);
     }
