@@ -210,8 +210,15 @@ Route::get('com-training-courses/get', [ComputerTraining::class, 'courseList']);
 
 // Sports app routes start -------------------------------
 Route::middleware(['cookie.auth', 'auth:api'])->prefix('sports')->group(function () {
-    Route::apiResource('homepage-sliders', HomepageSliderController::class)->except(['show']);
-    Route::put('homepage-sliders/activate/{id}', [HomepageSliderController::class, 'activate']);
+    Route::prefix('homepage-sliders')->group(function () {
+        // prefix: /sports/homepage-sliders/homepage-sliders
+        Route::prefix('homepage-sliders')->group(function () {
+            Route::apiResource('', HomepageSliderController::class)
+                ->parameters(['' => 'id'])
+                ->except(['show', 'update']);
+            Route::put('toggle/{id}', [HomepageSliderController::class, 'toggle']);
+        });
+    });
 
     Route::prefix('about-us')->group(function () {
         // prefix: /sports/about-us/admin-structure

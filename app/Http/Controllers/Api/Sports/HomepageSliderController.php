@@ -18,7 +18,14 @@ class HomepageSliderController extends Controller
     {
         $data = SpHomepageSlider::orderBy('id', 'desc')->paginate(10);
 
-        return response()->json(['data' => $data], Response::HTTP_OK);
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total()
+            ]
+        ], Response::HTTP_OK);
     }
 
     // ---------------------------
@@ -26,12 +33,12 @@ class HomepageSliderController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'slider' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:300',
+            'newImage' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:10240',
         ], [
-            'slider.required' => 'Slider image is required',
-            'slider.image' => 'File must be an image',
-            'slider.mimes' => 'Image must be a file of type: jpeg, png, jpg, gif, svg',
-            'slider.max' => 'Image may not be greater than 300 KB',
+            'newImage.required' => 'Image is required',
+            'newImage.image' => 'File must be an image',
+            'newImage.mimes' => 'Image must be a file of type: jpeg, png, jpg, gif, svg',
+            'newImage.max' => 'Image may not be greater than 10 MB',
         ]);
 
         if ($validator->fails()) {
@@ -41,8 +48,10 @@ class HomepageSliderController extends Controller
         try {
             DB::beginTransaction();
 
-            if ($request->hasFile('slider')) {
-                $file = $request->file('slider');
+            $filePath = '';
+
+            if ($request->hasFile('newImage') && $request->file('newImage')->getSize() > 0) {
+                $file = $request->file('newImage');
                 $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
                 $directory = 'uploads/sports/homepage-sliders';
 
@@ -54,6 +63,7 @@ class HomepageSliderController extends Controller
 
             SpHomepageSlider::create([
                 'image_path' => Storage::url($filePath),
+                'is_active' => true
             ]);
 
             DB::commit();
@@ -84,9 +94,9 @@ class HomepageSliderController extends Controller
 
     // ---------------------------
 
-    public function activate(Request $request, $id)
+    public function toggle(Request $request, $id)
     {
-        SpHomepageSlider::where('id', $id)->update(['is_active' => $request->is_active]);
+        SpHomepageSlider::where('id', $id)->update(['is_active' => $request->checked]);
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }
