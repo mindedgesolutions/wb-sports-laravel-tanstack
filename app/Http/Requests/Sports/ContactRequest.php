@@ -24,7 +24,6 @@ class ContactRequest extends FormRequest
         return [
             'name' => 'required|max:255',
             'designation' => 'required|max:255',
-            'department' => 'required|max:255',
             'address' => 'nullable|max:255',
             'email' => 'nullable|email|max:255',
             'phone_1' => 'nullable|max:255',
@@ -38,7 +37,6 @@ class ContactRequest extends FormRequest
         return [
             'name' => 'Name',
             'designation' => 'Designation',
-            'department' => 'Department',
             'address' => 'Address',
             'email' => 'Email',
             'phone_1' => 'Phone 1',
@@ -51,10 +49,9 @@ class ContactRequest extends FormRequest
     {
         return [
             '*.required' => ':attribute is required',
-            '*.max' => ':attribute may not be more than :max characters',
+            '*.max' => ':attribute cannot be more than :max characters',
             'email.email' => 'Invalid email',
             '*.numeric' => ':attribute must be a number',
-            '*.max' => ':attribute can not be more than 10'
         ];
     }
 }

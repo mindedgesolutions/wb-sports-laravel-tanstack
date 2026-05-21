@@ -398,7 +398,8 @@ Route::middleware(['cookie.auth', 'auth:api'])->prefix('sports')->group(function
         // prefix: /sports/contact-us/contact-us
         Route::prefix('contact-us')->group(function () {
             Route::put('toggle/{id}', [ContactController::class, 'toggle']);
-            Route::put('sort', [ContactController::class, 'contactsSetOrder']);
+            Route::get('all', [ContactController::class, 'all']);
+            Route::put('sort', [ContactController::class, 'sort']);
             Route::apiResource('', ContactController::class)
                 ->parameters(['' => 'id'])
                 ->except(['show']);

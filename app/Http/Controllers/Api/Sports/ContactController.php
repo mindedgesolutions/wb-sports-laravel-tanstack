@@ -7,17 +7,29 @@ use App\Http\Requests\Sports\ContactRequest;
 use App\Models\SpContact;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Log;
 
 class ContactController extends Controller
 {
     public function index()
     {
-        $data = SpContact::orderBy('show_order')
+        $search = request()->query('search');
+
+        $data = SpContact::when($search, function ($query, $search) {
+            $query->where('title', 'ILIKE', "%{$search}%")
+                ->orWhere('description', 'ILIKE', "%{$search}%");
+        })
+            ->orderBy('show_order')
             ->orderBy('id', 'desc')
             ->paginate(10);
 
-        return response()->json(['data' => $data], Response::HTTP_OK);
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total()
+            ]
+        ], Response::HTTP_OK);
     }
 
     // --------------------------------------------
@@ -27,7 +39,7 @@ class ContactController extends Controller
         SpContact::create([
             'name' => trim($request->name),
             'designation' => trim($request->designation),
-            'department' => trim($request->department),
+            'department' => config('lookup.department'),
             'address' => $request->address ? trim($request->address) : null,
             'email' => $request->email ? $request->email : null,
             'phone_1' => $request->phone_1 ? $request->phone_1 : null,
@@ -45,7 +57,7 @@ class ContactController extends Controller
         SpContact::whereId($id)->update([
             'name' => trim($request->name),
             'designation' => trim($request->designation),
-            'department' => trim($request->department),
+            'department' => config('lookup.department'),
             'address' => $request->address ? trim($request->address) : null,
             'email' => $request->email ? $request->email : null,
             'phone_1' => $request->phone_1 ? $request->phone_1 : null,
@@ -72,6 +84,15 @@ class ContactController extends Controller
         SpContact::whereId($id)->update(['is_active' => $request->checked]);
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);
+    }
+
+    // --------------------------------------------
+
+    public function all()
+    {
+        $data = SpContact::orderBy('show_order')->get();
+
+        return response()->json(['data' => $data], Response::HTTP_OK);
     }
 
     // --------------------------------------------

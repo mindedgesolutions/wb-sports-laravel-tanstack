@@ -30,7 +30,7 @@ class NewsScrollRequest extends FormRequest
                 }
             }],
             'news_date' => 'nullable|date|before_or_equal:today',
-            'file' => [Rule::requiredIf(!$this->id), 'nullable', 'max:10240'],
+            'newFile' => [Rule::requiredIf(!$this->id), 'nullable', 'max:10240'],
         ];
     }
 
@@ -39,7 +39,7 @@ class NewsScrollRequest extends FormRequest
         return [
             'title' => 'title',
             'news_date' => 'news date',
-            'file' => 'file',
+            'newFile' => 'file',
         ];
     }
 

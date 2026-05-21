@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Sports;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sports\NewsScrollRequest;
+use App\Models\SpContact;
 use App\Models\SpNewsScroll;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
