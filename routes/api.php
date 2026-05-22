@@ -428,8 +428,9 @@ Route::post('sports/send-feedback', [FeedbackController::class, 'sendFeedback'])
 
 // Sports website routes start -------------------------------
 
-Route::controller(SportsWebsiteController::class)->prefix('sports')->group(function () {
+Route::controller(SportsWebsiteController::class)->prefix('sports/website')->group(function () {
     Route::get('homepage-slider/all', 'getHomepageSlider');
+    Route::get('news-events/scroll', 'newsScroller');
     Route::get('web-key-personnel/all', 'getKeyPersonnel');
     Route::get('sports-personnel/all', 'getSportsPersonnel');
     Route::get('achievements/all', 'getAchievementsAll');
@@ -459,7 +460,6 @@ Route::controller(SportsWebsiteController::class)->prefix('sports')->group(funct
     Route::get('rti-notices/all', 'getRtiNotices');
     Route::get('contacts/all', 'getContactsAll');
     Route::get('gallery-images-ltd/{count}', 'galleryImagesLtd');
-    Route::get('news-events/scroll', 'newsScroller');
 });
 // Sports app routes end -------------------------------
 

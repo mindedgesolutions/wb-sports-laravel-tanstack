@@ -20,4 +20,24 @@ class DownloadController extends Controller
 
         return Storage::disk('public')->download($filePath, $filename);
     }
+
+    // ----------------------------------
+
+    public function preview(Request $request)
+    {
+        $filePath = str_replace('/storage', '', $request->filePath);
+
+        if (!Storage::disk('public')->exists($filePath)) {
+            abort(404, 'File not found.');
+        }
+
+        $fullPath = Storage::disk('public')->path($filePath);
+        $mimeType = mime_content_type($fullPath);
+        $fileName = basename($filePath);
+
+        return response()->file($fullPath, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . $fileName . '"',
+        ]);
+    }
 }
