@@ -364,7 +364,7 @@ class SportsWebsiteController extends Controller
 
     // ---------------------------------------------
 
-    public function galleryImagesLtd($count)
+    public function galleryImagesLtd(String $count)
     {
         $data = SpPhoto::orderBy('id', 'desc')
             ->limit($count)
