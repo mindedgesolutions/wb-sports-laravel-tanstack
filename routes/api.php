@@ -432,10 +432,11 @@ Route::controller(SportsWebsiteController::class)->prefix('sports/website')->gro
     Route::get('homepage-slider/all', 'getHomepageSlider');
     Route::get('news-events/scroll', 'newsScroller');
     Route::get('org-structure/all', 'getOrgStructureAll');
-    Route::get('gallery-images-ltd/{count}', 'galleryImagesLtd');
     Route::get('web-key-personnel/all', 'getKeyPersonnel');
-    Route::get('sports-personnel/all', 'getSportsPersonnel');
     Route::get('achievements/all', 'getAchievementsAll');
+    Route::get('sports-personnel/all', 'getSportsPersonnel');
+    Route::get('sports-personnel-web/{sport}', 'sportwiseSportsPersonnel');
+    Route::get('gallery-images-ltd/{count}', 'galleryImagesLtd');
     Route::get('wbs-designations/{type}', 'getWbsDesignations');
     Route::get('advisory-board', 'getAdvisoryBoard');
     Route::get('working-committee', 'getWorkingCommittee');

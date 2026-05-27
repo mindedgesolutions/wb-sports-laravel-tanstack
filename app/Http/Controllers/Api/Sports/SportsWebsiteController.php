@@ -63,13 +63,24 @@ class SportsWebsiteController extends Controller
 
     // --------------------------------------------
 
+    public function sportwiseSportsPersonnel($sport = 'football')
+    {
+        $data = SpSportsPersonnel::where('is_active', true)
+            ->where('sport', $sport)
+            ->get();
+
+        return response()->json(['data' => $data], Response::HTTP_OK);
+    }
+
+    // --------------------------------------------
+
     public function getAchievementsAll()
     {
         $data = SpAchievement::where('is_active', true)
             ->orderBy('show_order')
             ->orderBy('achievement_date', 'desc')
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate(20);
 
         return response()->json(['data' => $data], Response::HTTP_OK);
     }
