@@ -436,12 +436,12 @@ Route::controller(SportsWebsiteController::class)->prefix('sports/website')->gro
     Route::get('achievements/all', 'getAchievementsAll');
     Route::get('sports-personnel/all', 'getSportsPersonnel');
     Route::get('sports-personnel-web/{sport}', 'sportwiseSportsPersonnel');
+    Route::get('events/all', 'getSportsEventsAll');
     Route::get('gallery-images-ltd/{count}', 'galleryImagesLtd');
     Route::get('wbs-designations/{type}', 'getWbsDesignations');
     Route::get('advisory-board', 'getAdvisoryBoard');
     Route::get('working-committee', 'getWorkingCommittee');
     Route::get('single-achievement/{slug}', 'getPlayersAchievementSingle');
-    Route::get('events/all', 'getSportsEventsAll');
     Route::get('announcements/all/{type}', 'getAnnouncementsAll');
     Route::get('announcements/ltd/{type}/{count}', 'getAnnouncementsLtd');
     Route::get('awards/all', 'getAwardsAll');

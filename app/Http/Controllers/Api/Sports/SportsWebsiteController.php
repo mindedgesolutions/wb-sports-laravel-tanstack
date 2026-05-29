@@ -139,7 +139,7 @@ class SportsWebsiteController extends Controller
 
     // --------------------------------------------
 
-    public function getPlayersAchievementSingle($slug)
+    public function getPlayersAchievementSingle(String $slug)
     {
         $data = SpPlayersAchievement::where('sport', $slug)
             ->where('is_active', true)
@@ -154,14 +154,14 @@ class SportsWebsiteController extends Controller
     {
         $data = SpSportsEvent::orderBy('event_date')
             ->where('is_active', true)
-            ->get();
+            ->paginate(20);
 
         return response()->json(['data' => $data], Response::HTTP_OK);
     }
 
     // --------------------------------------------
 
-    public function getAnnouncementsAll($type)
+    public function getAnnouncementsAll(String $type)
     {
         $data = SpAnnouncement::where('type', $type)
             ->where('is_active', true)
