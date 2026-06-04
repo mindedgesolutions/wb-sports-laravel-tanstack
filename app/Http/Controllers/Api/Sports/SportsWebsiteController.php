@@ -30,6 +30,7 @@ use App\Models\SpSportsPersonnel;
 use App\Models\SpStadium;
 use App\Models\SpWbsCouncilDesignation;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 
 class SportsWebsiteController extends Controller
 {
@@ -99,7 +100,7 @@ class SportsWebsiteController extends Controller
 
     // --------------------------------------------
 
-    public function getWbsDesignations($type)
+    public function getWbsDesignations(String $type)
     {
         $data = SpWbsCouncilDesignation::where('type', $type)
             ->where('is_active', true)
@@ -163,17 +164,25 @@ class SportsWebsiteController extends Controller
 
     public function getAnnouncementsAll(String $type)
     {
+        $search = request()->query('search');
+
         $data = SpAnnouncement::where('type', $type)
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('ann_no', 'ILIKE', "%{$search}%")
+                        ->orWhere('subject', 'ILIKE', "%{$search}%");
+                });
+            })
             ->where('is_active', true)
             ->orderBy('start_date', 'desc')
-            ->get();
+            ->paginate(20);
 
         return response()->json(['data' => $data], Response::HTTP_OK);
     }
 
     // --------------------------------------------
 
-    public function getAnnouncementsLtd($type, $count)
+    public function getAnnouncementsLtd(String $type, int $count)
     {
         $data = SpAnnouncement::where('type', $type)
             ->where('is_active', true)
@@ -208,7 +217,7 @@ class SportsWebsiteController extends Controller
 
     //  --------------------------------------------
 
-    public function getStadiumInfo($slug)
+    public function getStadiumInfo(String $slug)
     {
         $data = SpStadium::where('slug', $slug)->first();
 
@@ -217,7 +226,7 @@ class SportsWebsiteController extends Controller
 
     // --------------------------------------------
 
-    public function imagesLanding($count)
+    public function imagesLanding(int $count)
     {
         $data = SpPhoto::orderBy('id', 'desc')->limit($count)->get();
 
@@ -233,14 +242,14 @@ class SportsWebsiteController extends Controller
             ->where('is_active', true)
             ->orderBy('event_date')
             ->orderBy('title')
-            ->get();
+            ->paginate(12);
 
         return response()->json(['data' => $data], Response::HTTP_OK);
     }
 
     // --------------------------------------------
 
-    public function gallerySingle($slug)
+    public function gallerySingle(String $slug)
     {
         $data = SpPhotoGallery::with('photos')
             ->where('slug', $slug)
@@ -262,7 +271,7 @@ class SportsWebsiteController extends Controller
 
     public function getAmphanPhotos()
     {
-        $data = SpAmphanPhoto::orderBy('id', 'desc')->get();
+        $data = SpAmphanPhoto::orderBy('id', 'desc')->paginate(15);
 
         return response()->json(['data' => $data], Response::HTTP_OK);
     }
@@ -274,7 +283,7 @@ class SportsWebsiteController extends Controller
         $data = SpBulletin::where('is_active', true)
             ->orderBy('event_date', 'desc')
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate(15);
 
         return response()->json(['data' => $data], Response::HTTP_OK);
     }
@@ -299,7 +308,7 @@ class SportsWebsiteController extends Controller
         $data = SpAssociation::where('is_active', true)
             ->orderBy('name')
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate(10);
 
         return response()->json(['data' => $data], Response::HTTP_OK);
     }
@@ -320,7 +329,7 @@ class SportsWebsiteController extends Controller
 
     // --------------------------------------------
 
-    public function fifaSingle($slug)
+    public function fifaSingle(String $slug)
     {
         $data = SpFifa::with('photos')
             ->where('slug', $slug)
@@ -354,10 +363,16 @@ class SportsWebsiteController extends Controller
 
     public function getRtiNotices()
     {
-        $data = SpRtiNotice::where('is_active', true)
+        $search = request()->query('search');
+
+        $data = SpRtiNotice::when($search, function ($query, $search) {
+            $query->where('notice_no', 'ILIKE', "%{$search}%")
+                ->orWhere('subject', 'ILIKE', "%{$search}%");
+        })
+            ->where('is_active', true)
             ->orderBy('start_date', 'desc')
             ->orderBy('id', 'desc')
-            ->get();
+            ->paginate(20);
 
         return response()->json(['data' => $data], Response::HTTP_OK);
     }

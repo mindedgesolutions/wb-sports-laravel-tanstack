@@ -143,7 +143,7 @@ class StadiumController extends Controller
 
     // ------------------------------------------------
 
-    public function update(StadiumRequest $request, $id)
+    public function update(StadiumRequest $request, String $id)
     {
         $data = SpStadium::with('images')->findOrFail($id);
 

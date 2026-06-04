@@ -441,25 +441,26 @@ Route::controller(SportsWebsiteController::class)->prefix('sports/website')->gro
     Route::get('wbs-designations/{type}', 'getWbsDesignations');
     Route::get('advisory-board', 'getAdvisoryBoard');
     Route::get('working-committee', 'getWorkingCommittee');
-    Route::get('single-achievement/{slug}', 'getPlayersAchievementSingle');
     Route::get('announcements/all/{type}', 'getAnnouncementsAll');
     Route::get('announcements/ltd/{type}/{count}', 'getAnnouncementsLtd');
+    Route::get('advertisements/all', 'getAdvertisementsAll');
+    Route::get('single-achievement/{slug}', 'getPlayersAchievementSingle');
     Route::get('awards/all', 'getAwardsAll');
     Route::get('stadiums/all', 'getStadiumsAll');
     Route::get('stadium-info/{slug}', 'getStadiumInfo');
-    Route::get('images-landing/{count}', 'imagesLanding');
-    Route::get('photo-galleries', 'galleryAll');
-    Route::get('photo-gallery/{slug}', 'gallerySingle');
-    Route::get('audio-visuals/all', 'audioVisualsAll');
-    Route::get('amphan/all', 'getAmphanPhotos');
-    Route::get('bulletins/all', 'getBulletinsAll');
-    Route::get('advertisements/all', 'getAdvertisementsAll');
     Route::get('associations/all', 'getAssociationsAll');
     Route::get('fifa/all', 'fifaAll');
     Route::get('fifa/gallery/{slug}', 'fifaSingle');
     Route::get('sports-policies/all', 'sportsPoliciesAll');
     Route::get('assoc-sites/all', 'assocSitesAll');
+    Route::get('photo-galleries', 'galleryAll');
+    Route::get('photo-gallery/{slug}', 'gallerySingle');
+    Route::get('audio-visuals/all', 'audioVisualsAll');
+    Route::get('bulletins/all', 'getBulletinsAll');
+    Route::get('amphan/all', 'getAmphanPhotos');
     Route::get('rti-notices/all', 'getRtiNotices');
+
+    Route::get('images-landing/{count}', 'imagesLanding');
     Route::get('contacts/all', 'getContactsAll');
 });
 // Sports app routes end -------------------------------
