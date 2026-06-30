@@ -15,8 +15,11 @@ class ContactController extends Controller
         $search = request()->query('search');
 
         $data = SpContact::when($search, function ($query, $search) {
-            $query->where('title', 'ILIKE', "%{$search}%")
-                ->orWhere('description', 'ILIKE', "%{$search}%");
+            $query->where('name', 'ILIKE', "%{$search}%")
+                ->orWhere('designation', 'ILIKE', "%{$search}%")
+                ->orWhere('email', 'ILIKE', "%{$search}%")
+                ->orWhere('phone_1', 'ILIKE', "%{$search}%")
+                ->orWhere('phone_2', 'ILIKE', "%{$search}%");
         })
             ->orderBy('show_order')
             ->orderBy('id', 'desc')

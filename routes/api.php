@@ -65,19 +65,43 @@ Route::controller(UpdateDataController::class)->prefix('sports')->group(function
 });
 
 // Services app routes start -------------------------------
-
-Route::middleware(['cookie.auth', 'auth:api'])->group(function () {
+Route::middleware(['cookie.auth:services', 'auth:api'])->prefix('services')->group(function () {
     Route::controller(AuthController::class)->prefix('auth')->group(function () {
+        // prefix: /services/auth
         Route::post('logout/{organisation}', 'logout');
         Route::get('me', 'me');
         Route::post('change-password', 'changePassword');
         Route::post('update', 'profileUpdate');
     });
 
-    Route::apiResource('banners', BannerController::class)->except(['show', 'update']);
-    Route::controller(BannerController::class)->prefix('banners')->group(function () {
-        Route::post('update/{id}', 'bannerUpdate');
-        Route::put('activate/{id}', 'activate');
+    Route::prefix('banners')->group(function () {
+        // prefix: /services/banners/banners
+        Route::prefix('banners')->group(function () {
+            Route::apiResource('', BannerController::class)
+                ->parameters(['' => 'id'])
+                ->except(['show']);
+            Route::put('toggle/{id}', [BannerController::class, 'toggle']);
+        });
+    });
+
+    Route::prefix('about-us')->group(function () {
+        // prefix: /services/about-us/org-chart
+        Route::prefix('org-chart')->group(function () {
+            Route::put('sort', [OrganisationChartController::class, 'sort']);
+            Route::apiResource('', OrganisationChartController::class)
+                ->parameters(['' => 'id'])
+                ->except(['show']);
+            Route::get('all', [OrganisationChartController::class, 'all']);
+            Route::put('toggle/{id}', [OrganisationChartController::class, 'toggle']);
+        });
+
+        // prefix: /services/about-us/district-block-offices
+        Route::prefix('district-block-offices')->group(function () {
+            Route::apiResource('', DistrictBlockOfficeController::class)
+                ->parameters(['' => 'id'])
+                ->except(['show']);
+            Route::put('toggle/{id}', [DistrictBlockOfficeController::class, 'toggle']);
+        });
     });
 
     Route::apiResource('com-training-courses', ComputerTraining::class)->except(['show']);
@@ -147,9 +171,6 @@ Route::middleware(['cookie.auth', 'auth:api'])->group(function () {
         // ------------Gallery related ends -----------------
     });
 
-    Route::apiResource('district-block-offices', DistrictBlockOfficeController::class)->except(['show']);
-    Route::put('district-block-offices/activate/{id}', [DistrictBlockOfficeController::class, 'activate']);
-
     Route::apiResource('youth-hostels', YouthHostelController::class)->except(['update']);
     Route::post('youth-hostels/update/{id}', [YouthHostelController::class, 'youthHostelUpdate']);
     Route::put('youth-hostels/activate/{id}', [YouthHostelController::class, 'activate']);
@@ -157,14 +178,6 @@ Route::middleware(['cookie.auth', 'auth:api'])->group(function () {
     Route::apiResource('news-events', NewsEventsController::class)->except(['show', 'update']);
     Route::put('news-events/activate/{id}', [NewsEventsController::class, 'activate']);
     Route::post('news-events/update/{id}', [NewsEventsController::class, 'updateNews']);
-
-    Route::apiResource('org-chart', OrganisationChartController::class)->except(['show', 'update']);
-    Route::controller(OrganisationChartController::class)->prefix('org-chart')->group(function () {
-        Route::post('update/{id}', 'updateMember');
-        Route::put('activate/{id}', 'activate');
-        Route::get('all', 'orgChartAll');
-        Route::put('set-order', 'orgChartSetOrder');
-    });
 
     Route::apiResource('mountain-trainings', MountainTrainingController::class)->except(['show']);
     Route::controller(MountainTrainingController::class)->prefix('mountain-trainings')->group(function () {
@@ -209,7 +222,15 @@ Route::get('com-training-courses/get', [ComputerTraining::class, 'courseList']);
 // Services website routes end -------------------------------
 
 // Sports app routes start -------------------------------
-Route::middleware(['cookie.auth', 'auth:api'])->prefix('sports')->group(function () {
+Route::middleware(['cookie.auth:sports', 'auth:api'])->prefix('sports')->group(function () {
+    Route::controller(AuthController::class)->prefix('auth')->group(function () {
+        // prefix: /sports/auth
+        Route::post('logout/{organisation}', 'logout');
+        Route::get('me', 'me');
+        Route::post('change-password', 'changePassword');
+        Route::post('update', 'profileUpdate');
+    });
+
     Route::prefix('homepage-sliders')->group(function () {
         // prefix: /sports/homepage-sliders/homepage-sliders
         Route::prefix('homepage-sliders')->group(function () {
@@ -459,7 +480,6 @@ Route::controller(SportsWebsiteController::class)->prefix('sports/website')->gro
     Route::get('bulletins/all', 'getBulletinsAll');
     Route::get('amphan/all', 'getAmphanPhotos');
     Route::get('rti-notices/all', 'getRtiNotices');
-
     Route::get('images-landing/{count}', 'imagesLanding');
     Route::get('contacts/all', 'getContactsAll');
 });

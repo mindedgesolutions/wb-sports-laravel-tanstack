@@ -7,9 +7,9 @@ use Illuminate\Http\Request;
 
 class CookieToAuthHeader
 {
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, Closure $next, string $system)
     {
-        $token = $request->cookie('access_sports');
+        $token = $request->cookie("access_{$system}");
 
         if ($token) {
             $request->headers->set('Authorization', 'Bearer ' . $token);

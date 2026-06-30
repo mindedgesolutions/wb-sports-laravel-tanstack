@@ -22,7 +22,7 @@ class DistrictBlockOfficeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'district' => 'required|exists:districts,id',
+            'districtId' => 'required|exists:districts,id',
             'name' => 'required|string|max:255',
             'address' => 'nullable|string|max:255',
             'landline' => 'nullable|max:20',
@@ -38,6 +38,7 @@ class DistrictBlockOfficeRequest extends FormRequest
     public function attributes()
     {
         return [
+            'districtId' => 'district',
             'name' => 'name of the office',
             'landline' => 'landline no.',
             'mobile_1' => 'mobile no. 1',

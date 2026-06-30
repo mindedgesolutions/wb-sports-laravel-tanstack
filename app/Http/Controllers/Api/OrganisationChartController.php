@@ -15,9 +15,24 @@ class OrganisationChartController extends Controller
 {
     public function index()
     {
-        $data = OrganisationChart::orderBy('show_order')->paginate(10);
+        $search = request()->query('search');
 
-        return response()->json(['data' => $data]);
+        $data = OrganisationChart::when($search, function ($query, $search) {
+            $query->where('name', 'ILIKE', "%{$search}%")
+                ->orWhere('designation', 'ILIKE', "%{$search}%")
+                ->orWhere('rank', 'ILIKE', "%{$search}%");
+        })
+            ->orderBy('show_order')
+            ->paginate(10);
+
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total(),
+            ]
+        ], Response::HTTP_OK);
     }
 
     // -------------------------------------------------
@@ -36,23 +51,30 @@ class OrganisationChartController extends Controller
                 }
             ],
             'designation' => 'required|max:255',
-            'message' => 'nullable',
-            'profileImg' => 'nullable|array',
-            'profileImg.*' => 'image|mimes:jpeg,png,jpg,gif|max:100',
+            'department' => 'required|max:255',
+            'message' => 'nullable|max:500',
+            'newImg' => [
+                'nullable',
+                'image',
+                'mimes:jpeg,png,jpg,webp',
+                'max:10240'
+            ],
         ], [
             '*.required' => ':Attribute is required',
             '*.max' => ':Attribute must not exceed :max characters',
-            'profileImg.image' => 'Profile image must be a valid image file',
-            'profileImg.mimes' => 'Profile image must be of type jpeg, png, jpg, or gif',
-            'profileImg.max' => 'Profile image size must not exceed 100KB',
+            'newImg.image' => 'Profile image must be a valid image file',
+            'newImg.mimes' => 'Profile image must be of type jpeg, png, jpg, or gif',
+            'newImg.max' => 'Profile image size must not exceed 10 MB',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if ($request->hasFile('profileImg') && $request->file('profileImg')[0]->getSize() > 0) {
-            $file = $request->file('profileImg')[0];
+        $filePath = '';
+
+        if ($request->hasFile('newImg') && $request->file('newImg')->getSize() > 0) {
+            $file = $request->file('newImg');
             $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
             $directory = 'uploads/services/org-chart';
 
@@ -66,10 +88,10 @@ class OrganisationChartController extends Controller
             'name' => trim($request->name),
             'slug' => Str::slug($request->name),
             'designation' => trim($request->designation),
+            'department' => $request->department,
             'rank' => $request->rank ? trim($request->rank) : null,
-            'department' => $request->department ? $request->department : null,
             'message' => $request->message ? trim($request->message) : null,
-            'image_path' => $request->hasFile('profileImg') ? Storage::url($filePath) : null,
+            'image_path' => $request->hasFile('newImg') ? Storage::url($filePath) : null,
             'added_by' => Auth::id(),
         ]);
 
@@ -78,7 +100,7 @@ class OrganisationChartController extends Controller
 
     // -------------------------------------------------
 
-    public function updateMember(Request $request, string $id)
+    public function update(Request $request, string $id)
     {
         $validator = Validator::make($request->all(), [
             'name' => [
@@ -96,14 +118,18 @@ class OrganisationChartController extends Controller
             ],
             'designation' => 'required|max:255',
             'message' => 'nullable',
-            'profileImg' => 'nullable|array',
-            'profileImg.*' => 'image|mimes:jpeg,png,jpg,gif|max:100',
+            'newImg' => [
+                'nullable',
+                'image',
+                'mimes:jpeg,png,jpg,webp',
+                'max:10240'
+            ],
         ], [
             '*.required' => ':Attribute is required',
             '*.max' => ':Attribute must not exceed :max characters',
-            'profileImg.image' => 'Profile image must be a valid image file',
-            'profileImg.mimes' => 'Profile image must be of type jpeg, png, jpg, or gif',
-            'profileImg.max' => 'Profile image size must not exceed 100KB',
+            'newImg.image' => 'Profile image must be a valid image file',
+            'newImg.mimes' => 'Profile image must be of type jpeg, png, jpg, or gif',
+            'newImg.max' => 'Profile image size must not exceed 10 MB',
         ]);
 
         if ($validator->fails()) {
@@ -112,8 +138,10 @@ class OrganisationChartController extends Controller
 
         $data = OrganisationChart::findOrFail($id);
 
-        if ($request->hasFile('profileImg') && $request->file('profileImg')[0]->getSize() > 0) {
-            $file = $request->file('profileImg')[0];
+        $filePath = '';
+
+        if ($request->hasFile('newImg') && $request->file('newImg')->getSize() > 0) {
+            $file = $request->file('newImg');
             $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
             $directory = 'uploads/services/org-chart';
 
@@ -135,10 +163,10 @@ class OrganisationChartController extends Controller
             'name' => trim($request->name),
             'slug' => Str::slug($request->name),
             'designation' => trim($request->designation),
+            'department' => $request->department,
             'rank' => $request->rank ? trim($request->rank) : null,
-            'department' => $request->department ? $request->department : null,
             'message' => $request->message ? trim($request->message) : null,
-            'image_path' => $request->hasFile('profileImg') ? Storage::url($filePath) : $data->image_path ?? null,
+            'image_path' => $request->hasFile('newImg') ? Storage::url($filePath) : $data->image_path ?? null,
             'updated_by' => Auth::id(),
         ]);
 
@@ -165,16 +193,16 @@ class OrganisationChartController extends Controller
 
     // -------------------------------------------------
 
-    public function activate(Request $request, string $id)
+    public function toggle(Request $request, string $id)
     {
-        OrganisationChart::whereId($id)->update(['is_active' => $request->is_active]);
+        OrganisationChart::whereId($id)->update(['is_active' => $request->checked]);
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }
 
     // -------------------------------------------------
 
-    public function orgChartAll()
+    public function all()
     {
         $data = OrganisationChart::where('is_active', true)
             ->orderBy('show_order', 'asc')
@@ -186,7 +214,7 @@ class OrganisationChartController extends Controller
 
     // -------------------------------------------------
 
-    public function orgChartSetOrder(Request $request)
+    public function sort(Request $request)
     {
         foreach ($request->all() as $key => $value) {
             OrganisationChart::where('id', $value['id'])->update(['show_order' => $key]);

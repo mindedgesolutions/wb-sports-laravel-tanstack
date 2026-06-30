@@ -23,4 +23,22 @@ class DistrictBlockOffice extends Model
         'added_by',
         'updated_by'
     ];
+
+    public function scopeSearchOffice(Object $query, ?String $search)
+    {
+        if (!$search) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($search) {
+            $q->where('district_block_offices.name', 'ilike', "%{$search}%")
+                ->orWhere('district_block_offices.address', 'ilike', "%{$search}%")
+                ->orWhere('district_block_offices.landline_no', 'ilike', "%{$search}%")
+                ->orWhere('district_block_offices.email', 'ilike', "%{$search}%")
+                ->orWhere('district_block_offices.officer_name', 'ilike', "%{$search}%")
+                ->orWhere('district_block_offices.officer_designation', 'ilike', "%{$search}%")
+                ->orWhere('district_block_offices.officer_mobile', 'ilike', "%{$search}%")
+                ->orWhere('districts.name', 'ilike', "%{$search}%");
+        });
+    }
 }

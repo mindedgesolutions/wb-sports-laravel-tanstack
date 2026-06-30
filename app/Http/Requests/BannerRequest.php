@@ -16,9 +16,14 @@ class BannerRequest extends FormRequest
     {
         return [
             'page' => ['nullable', Rule::requiredIf(!$this->id)],
-            'pageTitle' => ['nullable', 'max:255'],
-            'banner' => ['nullable', 'array', Rule::requiredIf(!$this->id)],
-            'banner.*' => 'image|file|mimes:jpeg,png,jpg,webp|max:200',
+            'title' => ['nullable', 'max:255'],
+            'newImg' => [
+                Rule::requiredIf(!$this->id),
+                'nullable',
+                'image',
+                'mimes:jpeg,png,jpg,webp',
+                'max:10240',
+            ],
         ];
     }
 
@@ -26,8 +31,8 @@ class BannerRequest extends FormRequest
     {
         return [
             'page' => 'Page',
-            'pageTitle' => 'Page title',
-            'banner' => 'Banner',
+            'title' => 'Page title',
+            'newImg' => 'Banner',
         ];
     }
 
@@ -35,10 +40,10 @@ class BannerRequest extends FormRequest
     {
         return [
             '*.required' => ':Attribute is required',
-            'pageTitle.max' => 'Page title must not exceed 255 characters',
-            'banner.image' => 'Banner must be an image',
-            'banner.mimes' => 'Invalid file type. Allowed: jpeg, png, jpg, webp',
-            'banner.max' => 'File size must be less than 500 KB',
+            'title.max' => 'Page title must not exceed 255 characters',
+            'newImg.image' => 'Banner must be an image',
+            'newImg.mimes' => 'Invalid file type. Allowed: jpeg, png, jpg, webp',
+            'newImg.max' => 'File size must be less than 1 MB',
         ];
     }
 }

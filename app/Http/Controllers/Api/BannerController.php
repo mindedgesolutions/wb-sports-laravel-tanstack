@@ -17,12 +17,22 @@ class BannerController extends Controller
 {
     public function index()
     {
+        $search = request()->query('search');
+
         $data = Banner::where('organization', 'services')
-            ->with('banner_added_by', 'banner_updated_by')
-            ->orderBy('created_at', 'desc')
+            ->when($search, function ($query, $search) {
+                $query->where('page_title', 'ILIKE', "%{$search}%");
+            })
             ->paginate(10);
 
-        return response()->json(['data' => $data], Response::HTTP_OK);
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total(),
+            ]
+        ], Response::HTTP_OK);
     }
 
     // --------------------------------------------
@@ -35,8 +45,8 @@ class BannerController extends Controller
             $check = Banner::where('page_url', $request->page)->first();
             $filePath = '';
 
-            if ($request->hasFile('banner')) {
-                $file = $request->file('banner')[0];
+            if ($request->hasFile('newImg')) {
+                $file = $request->file('newImg');
                 $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
                 $directory = 'uploads/services/banners';
 
@@ -57,17 +67,18 @@ class BannerController extends Controller
 
             if ($check) {
                 Banner::where('page_url', $request->page)->update([
-                    'page_title' => trim($request->pageTitle) ?? null,
+                    'page_title' => trim($request->title) ?? null,
                     'updated_by' => Auth::id(),
                     'image_path' => Storage::url($filePath),
                 ]);
             } else {
                 Banner::create([
                     'page_url' => $request->page,
-                    'page_title' => trim($request->pageTitle) ?? null,
+                    'page_title' => trim($request->title) ?? null,
                     'added_by' => Auth::id(),
                     'image_path' => Storage::url($filePath),
                     'organization' => 'services',
+                    'is_active' => true
                 ]);
             }
 
@@ -83,7 +94,7 @@ class BannerController extends Controller
 
     // --------------------------------------------
 
-    public function bannerUpdate(BannerRequest $request, $id)
+    public function update(BannerRequest $request, String $id)
     {
         $data = Banner::findOrFail($id);
 
@@ -92,8 +103,8 @@ class BannerController extends Controller
 
             $filePath = '';
 
-            if ($request->hasFile('banner') && $request->file('banner')[0]->getSize() > 0) {
-                $file = $request->file('banner')[0];
+            if ($request->hasFile('newImg') && $request->file('newImg')->getSize() > 0) {
+                $file = $request->file('newImg');
                 $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
                 $directory = 'uploads/services/banners';
 
@@ -113,9 +124,9 @@ class BannerController extends Controller
             }
 
             Banner::where('id', $id)->update([
-                'page_title' => trim($request->pageTitle) ?? $data->page_title,
+                'page_title' => trim($request->title) ?? $data->page_title,
                 'updated_by' => Auth::id(),
-                'image_path' => $request->hasFile('banner') ? Storage::url($filePath) : $data->image_path,
+                'image_path' => $request->hasFile('newImg') ? Storage::url($filePath) : $data->image_path,
             ]);
 
             DB::commit();
@@ -156,9 +167,9 @@ class BannerController extends Controller
 
     // --------------------------------------------
 
-    public function activate(Request $request, string $id)
+    public function toggle(Request $request, string $id)
     {
-        Banner::where('id', $id)->update(['is_active' => $request->is_active]);
+        Banner::where('id', $id)->update(['is_active' => $request->checked]);
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }

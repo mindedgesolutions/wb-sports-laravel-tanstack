@@ -14,25 +14,24 @@ class DistrictBlockOfficeController extends Controller
 {
     public function index()
     {
+        $search = request()->query('search');
+
         $data = DistrictBlockOffice::where('organisation', 'services')
             ->join('districts', 'districts.id', '=', 'district_block_offices.district_id')
             ->select('district_block_offices.*', 'districts.name as district_name')
-            ->when(request()->query('dist'), function ($query) {
-                return $query->where('district_block_offices.district_id', request()->query('dist'));
-            })
-            ->when(request()->query('s'), function ($query) {
-                return $query->where('district_block_offices.name', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('district_block_offices.address', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('district_block_offices.landline_no', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('district_block_offices.email', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('district_block_offices.officer_name', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('district_block_offices.officer_designation', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('district_block_offices.officer_mobile', 'like', '%' . request()->query('s') . '%');
-            })->orderBy('districts.name', 'asc')
-            ->orderBy('district_block_offices.name', 'asc')
+            ->searchOffice($search)
+            ->orderBy('districts.name')
+            ->orderBy('district_block_offices.name')
             ->paginate(10);
 
-        return response()->json(['data' => $data], Response::HTTP_OK);
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total(),
+            ]
+        ], Response::HTTP_OK);
     }
 
     // --------------------------------
@@ -40,7 +39,7 @@ class DistrictBlockOfficeController extends Controller
     public function store(DistrictBlockOfficeRequest $request)
     {
         DistrictBlockOffice::create([
-            'district_id' => $request->district,
+            'district_id' => $request->districtId,
             'name' => trim($request->name),
             'slug' => Str::slug($request->name),
             'address' => trim($request->address),
@@ -62,7 +61,7 @@ class DistrictBlockOfficeController extends Controller
     public function update(DistrictBlockOfficeRequest $request, string $id)
     {
         DistrictBlockOffice::where('id', $id)->update([
-            'district_id' => $request->district,
+            'district_id' => $request->districtId,
             'name' => trim($request->name),
             'slug' => Str::slug($request->name),
             'address' => trim($request->address),
@@ -90,10 +89,10 @@ class DistrictBlockOfficeController extends Controller
 
     // --------------------------------
 
-    public function activate(Request $request, string $id)
+    public function toggle(Request $request, string $id)
     {
         DistrictBlockOffice::where('id', $id)->update([
-            'is_active' => $request->is_active,
+            'is_active' => $request->checked,
             'updated_by' => Auth::id(),
         ]);
 

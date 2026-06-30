@@ -331,7 +331,7 @@ class AuthController extends Controller
 
     // --------------------------------------------
 
-    public function logout(Request $request, $organisation)
+    public function logout(Request $request, string $organisation)
     {
         UserLogin::where(['user_id' => Auth::id()])->delete();
 
