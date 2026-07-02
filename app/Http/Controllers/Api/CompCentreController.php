@@ -105,9 +105,9 @@ class CompCentreController extends Controller
 
     // --------------------------------------------
 
-    public function activate(Request $request, $id)
+    public function toggle(Request $request, String $id)
     {
-        CompCenter::where('id', $id)->update(['is_active' => $request->is_active]);
+        CompCenter::where('id', $id)->update(['is_active' => $request->checked]);
 
         return response()->json(['message' => 'Status updated successfully'], Response::HTTP_OK);
     }

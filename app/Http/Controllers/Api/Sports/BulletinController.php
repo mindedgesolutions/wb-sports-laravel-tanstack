@@ -40,8 +40,8 @@ class BulletinController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'nullable|max:255',
             'eventDate' => 'nullable|before_or_equal:today',
-            'newFile' => 'required|file|max:10240',
-        ]);
+            'newFile' => 'nullable|max:5120',
+        ], [], ['eventDate' => 'Event date', 'newFile' => 'Attachment']);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -57,13 +57,17 @@ class BulletinController extends Controller
             $file = $request->file('newFile');
             $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
             $directory = 'uploads/sports/bulletins';
+            $fileOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
 
             if (!Storage::disk('public')->exists($directory)) {
                 Storage::disk('public')->makeDirectory($directory);
             }
             $filePath = $file->storeAs($directory, $filename, 'public');
 
-            SpBulletin::whereId($data->id)->update(['file_path' => Storage::url($filePath)]);
+            SpBulletin::whereId($data->id)->update([
+                'file_path' => Storage::url($filePath),
+                'file_name' => $fileOriginalName
+            ]);
         }
 
         return response()->json(['message' => 'success'], Response::HTTP_CREATED);
@@ -76,8 +80,8 @@ class BulletinController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'nullable|max:255',
             'eventDate' => 'nullable|before_or_equal:today',
-            'newFile' => 'nullable|max:10240',
-        ]);
+            'newFile' => 'nullable|max:5120',
+        ], [], ['eventDate' => 'Event date', 'newFile' => 'Attachment']);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -95,6 +99,7 @@ class BulletinController extends Controller
             $file = $request->file('newFile');
             $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
             $directory = 'uploads/sports/bulletins';
+            $fileOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
 
             if ($data->file_path) {
                 $deletePath = str_replace('/storage', '', $data->file_path);
@@ -109,7 +114,10 @@ class BulletinController extends Controller
             }
             $filePath = $file->storeAs($directory, $filename, 'public');
 
-            SpBulletin::whereId($id)->update(['file_path' => Storage::url($filePath)]);
+            SpBulletin::whereId($id)->update([
+                'file_path' => Storage::url($filePath),
+                'file_name' => $fileOriginalName
+            ]);
         }
 
         return response()->json(['message' => 'success'], Response::HTTP_CREATED);

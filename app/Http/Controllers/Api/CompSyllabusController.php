@@ -17,9 +17,23 @@ class CompSyllabusController extends Controller
 {
     public function index()
     {
-        $syllabus = CompSyllabus::where('organisation', 'services')->orderBy('id', 'desc')->paginate(10);
+        $search = request()->query('search');
 
-        return response()->json(['data' => $syllabus], Response::HTTP_OK);
+        $data = CompSyllabus::where('organisation', 'services')
+            ->when($search, function ($query, $search) {
+                $query->where('name', 'ilike', "%{$search}%");
+            })
+            ->orderBy('id', 'desc')
+            ->paginate(10);
+
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total(),
+            ]
+        ], Response::HTTP_OK);
     }
 
     // ----------------------------------------------
@@ -28,15 +42,14 @@ class CompSyllabusController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'syllabusName' => 'required',
-            'file' => 'required|array',
-            'file.*' => 'mimes:pdf|max:1024'
+            'newFile' => 'required|mimes:pdf|max:5120'
         ], [
             '*.required' => ':Attribute is required',
-            'file.mimes' => ':Attribute must be a pdf',
-            'file.max' => ':Attribute must be less than 1MB',
+            'newFile.mimes' => ':Attribute must be a pdf',
+            'newFile.max' => ':Attribute must be less than 5MB',
         ], [
             'syllabusName' => 'Syllabus name',
-            'file' => 'Attachment',
+            'newFile' => 'Attachment',
         ]);
 
         if ($validator->fails()) {
@@ -51,23 +64,30 @@ class CompSyllabusController extends Controller
                 return response()->json(['errors' => ['syllabusName' => ['Syllabus name already exists']]], Response::HTTP_BAD_REQUEST);
             }
 
-            if ($request->hasFile('file')) {
-                $file = $request->file('file')[0];
+            $data = CompSyllabus::create([
+                'name' => trim($request->syllabusName),
+                'slug' => $slug,
+                'organisation' => 'services',
+                'added_by' => Auth::id(),
+                'file_path' => ''
+            ]);
+
+            if ($request->hasFile('newFile')) {
+                $file = $request->file('newFile');
                 $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
                 $directory = 'uploads/services/syllabus';
+                $fileOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
 
                 if (!Storage::disk('public')->exists($directory)) {
                     Storage::disk('public')->makeDirectory($directory);
                 }
                 $filePath = $file->storeAs($directory, $filename, 'public');
+
+                CompSyllabus::whereId($data->id)->update([
+                    'file_path' => Storage::url($filePath),
+                    'file_name' => $fileOriginalName
+                ]);
             }
-            CompSyllabus::create([
-                'name' => trim($request->syllabusName),
-                'slug' => $slug,
-                'file_path' => Storage::url($filePath),
-                'organisation' => 'services',
-                'added_by' => Auth::id(),
-            ]);
 
             DB::commit();
 
@@ -81,19 +101,22 @@ class CompSyllabusController extends Controller
 
     // ----------------------------------------------
 
-    public function syllabusUpdate(Request $request, string $id)
+    public function update(Request $request, string $id)
     {
         $validator = Validator::make($request->all(), [
             'syllabusName' => 'required',
-            'file' => ['nullable', 'array'],
-            'file.*' => 'mimes:pdf|max:1024'
+            'newFile' => [
+                'nullable',
+                'mimes:pdf',
+                'max:5120'
+            ],
         ], [
             '*.required' => ':Attribute is required',
-            'file.mimes' => ':Attribute must be a pdf',
-            'file.max' => ':Attribute must be less than 1MB',
+            'newFile.mimes' => ':Attribute must be a pdf',
+            'newFile.max' => ':Attribute must be less than 1MB',
         ], [
             'syllabusName' => 'Syllabus name',
-            'file' => 'Attachment',
+            'newFile' => 'Attachment',
         ]);
 
         if ($validator->fails()) {
@@ -104,6 +127,7 @@ class CompSyllabusController extends Controller
 
         $slug = Str::slug($request->syllabusName);
         $check = CompSyllabus::where('slug', $slug)->where('id', '!=', $id)->first();
+
         if ($check) {
             return response()->json(['errors' => ['syllabusName' => ['Syllabus name already exists']]], Response::HTTP_BAD_REQUEST);
         }
@@ -111,33 +135,35 @@ class CompSyllabusController extends Controller
         try {
             DB::beginTransaction();
 
-            $filePath = '';
+            CompSyllabus::where('id', $id)->update([
+                'name' => trim($request->syllabusName),
+                'slug' => $slug,
+            ]);
 
-            if ($request->hasFile('file') && $request->file('file')[0]->getSize() > 0) {
-                $file = $request->file('file')[0];
+            if ($request->hasFile('newFile') && $request->file('newFile')->getSize() > 0) {
+                $file = $request->file('newFile');
                 $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
                 $directory = 'uploads/services/syllabus';
+                $fileOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
 
                 if (!Storage::disk('public')->exists($directory)) {
                     Storage::disk('public')->makeDirectory($directory);
                 }
 
                 if ($data) {
-                    $deletePath = str_replace('/storage', '', $data->image_path);
+                    $deletePath = str_replace('/storage', '', $data->file_path);
 
                     if (Storage::disk('public')->exists($deletePath)) {
                         Storage::disk('public')->delete($deletePath);
                     }
                 }
-
                 $filePath = $file->storeAs($directory, $filename, 'public');
-            }
 
-            CompSyllabus::where('id', $id)->update([
-                'name' => trim($request->syllabusName),
-                'slug' => $slug,
-                'file_path' => $request->hasFile('file') ? Storage::url($filePath) : $data->file_path,
-            ]);
+                CompSyllabus::whereId($id)->update([
+                    'file_path' => Storage::url($filePath),
+                    'file_name' => $fileOriginalName,
+                ]);
+            }
 
             DB::commit();
 
@@ -177,9 +203,9 @@ class CompSyllabusController extends Controller
 
     // ----------------------------------------------
 
-    public function activate(Request $request, string $id)
+    public function toggle(Request $request, string $id)
     {
-        CompSyllabus::where('id', $id)->update(['is_active' => $request->is_active]);
+        CompSyllabus::where('id', $id)->update(['is_active' => $request->checked]);
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }

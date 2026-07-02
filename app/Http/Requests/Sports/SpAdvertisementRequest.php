@@ -44,7 +44,7 @@ class SpAdvertisementRequest extends FormRequest
                 Rule::requiredIf(!$this->id),
                 'nullable',
                 'file',
-                'max:102400',
+                'max:5120',
             ],
         ];
     }
@@ -63,7 +63,7 @@ class SpAdvertisementRequest extends FormRequest
     {
         return [
             '*.required' => ':Attribute is required.',
-            'newFile.max' => 'File must not exceed 100MB',
+            'newFile.max' => 'File must not exceed 5 MB',
             'adDate.before_or_equal' => 'Advertisement date must be today or earlier',
         ];
     }

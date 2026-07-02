@@ -13,30 +13,26 @@ use Illuminate\Support\Str;
 
 class ComputerTraining extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        $courses = CompTrainCourseDetail::where('organisation', "services")
-            ->when(request()->query('type'), function ($query) {
-                return $query->where('course_type', request()->query('type'));
-            })
-            ->when(request()->query('s'), function ($query) {
-                return $query->where('course_name', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('course_duration', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('course_eligibility', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('course_fees', 'like', '%' . request()->query('s') . '%');
-            })
+        $search = request()->query('search');
+
+        $data = CompTrainCourseDetail::where('organisation', "services")
+            ->searchCourse($search)
             ->paginate(10);
 
-        return response()->json(['courses' => $courses], Response::HTTP_OK);
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total(),
+            ]
+        ], Response::HTTP_OK);
     }
 
+    // --------------------------------
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
 
@@ -90,21 +86,17 @@ class ComputerTraining extends Controller
         }
     }
 
-    public function activate(Request $request, string $id)
+    // --------------------------------
+
+    public function toggle(Request $request, string $id)
     {
-        CompTrainCourseDetail::where('id', $id)->update(['is_active' => $request->is_active]);
+        CompTrainCourseDetail::where('id', $id)->update(['is_active' => $request->checked]);
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id) {}
+    // --------------------------------
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, string $id)
     {
         $validator = Validator::make($request->all(), [

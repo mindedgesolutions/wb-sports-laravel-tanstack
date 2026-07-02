@@ -16,9 +16,10 @@ class DownloadController extends Controller
             abort(404, 'File not found.');
         }
 
-        $filename = $request->fileName . '.' . pathinfo($filePath, PATHINFO_EXTENSION);
-
-        return Storage::disk('public')->download($filePath, $filename);
+        return Storage::disk('public')->download(
+            $filePath,
+            $request->fileName
+        );
     }
 
     // ----------------------------------
@@ -32,8 +33,10 @@ class DownloadController extends Controller
         }
 
         $fullPath = Storage::disk('public')->path($filePath);
+
         $mimeType = mime_content_type($fullPath);
-        $fileName = basename($filePath);
+
+        $fileName = $request->fileName;
 
         return response()->file($fullPath, [
             'Content-Type' => $mimeType,

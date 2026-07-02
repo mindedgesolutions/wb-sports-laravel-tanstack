@@ -10,6 +10,7 @@ class SpBulletin extends Model
         'name',
         'slug',
         'file_path',
+        'file_name',
         'event_date',
         'is_active',
     ];

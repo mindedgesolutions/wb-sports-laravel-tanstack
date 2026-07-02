@@ -49,10 +49,10 @@ class AwardsController extends Controller
                     $fail('Award exists');
                 }
             }],
-            'newFile' => 'required|file|max:102400',
+            'newFile' => 'required|file|max:5120',
         ], [
             '*.required' => ':Attribute is required.',
-            'newFile.max' => 'The :attribute may not be greater than 100MB.',
+            'newFile.max' => 'The :attribute may not be greater than 5 MB.',
         ], [
             'name' => 'name',
             'newFile' => 'file',
@@ -99,7 +99,7 @@ class AwardsController extends Controller
 
     // ------------------------------------------
 
-    public function update(Request $request, $id)
+    public function update(Request $request, String $id)
     {
         if (!$request->hasFile('newFile')) {
             $data['newFile'] = null;
@@ -115,10 +115,10 @@ class AwardsController extends Controller
                     $fail('Award exists');
                 }
             }],
-            'newFile' => 'required|file|max:102400',
+            'newFile' => 'required|file|max:5120',
         ], [
             '*.required' => ':Attribute is required.',
-            'newFile.max' => 'The :attribute may not be greater than 100MB.',
+            'newFile.max' => 'The :attribute may not be greater than 5 MB.',
         ], [
             'name' => 'name',
             'newFile' => 'file',
@@ -201,7 +201,7 @@ class AwardsController extends Controller
 
     // ------------------------------------------
 
-    public function toggle(Request $request, $id)
+    public function toggle(Request $request, String $id)
     {
         SpAward::whereId($id)->update(['is_active' => $request->checked]);
 

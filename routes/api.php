@@ -104,17 +104,31 @@ Route::middleware(['cookie.auth:services', 'auth:api'])->prefix('services')->gro
         });
     });
 
-    Route::apiResource('com-training-courses', ComputerTraining::class)->except(['show']);
-    Route::put('com-training-courses/activate/{id}', [ComputerTraining::class, 'activate']);
+    Route::prefix('computer-training')->group(function () {
+        // prefix: /services/computer-training/course-details
+        Route::prefix('course-details')->group(function () {
+            Route::apiResource('', ComputerTraining::class)
+                ->parameters(['' => 'id'])
+                ->except(['show']);
+            Route::put('toggle/{id}', [ComputerTraining::class, 'toggle']);
+        });
 
-    Route::apiResource('comp-syllabus', CompSyllabusController::class)->except(['show', 'update']);
-    Route::controller(CompSyllabusController::class)->prefix('comp-syllabus')->group(function () {
-        Route::post('update/{id}', 'syllabusUpdate');
-        Route::put('activate/{id}', 'activate');
+        // prefix: /services/computer-training/course-syllabus
+        Route::prefix('course-syllabus')->group(function () {
+            Route::apiResource('', CompSyllabusController::class)
+                ->parameters(['' => 'id'])
+                ->except(['show']);
+            Route::put('toggle/{id}', [CompSyllabusController::class, 'toggle']);
+        });
+
+        // prefix: /services/computer-training/training-centres
+        Route::prefix('training-centres')->group(function () {
+            Route::apiResource('', CompCentreController::class)
+                ->parameters(['' => 'id'])
+                ->except(['show']);
+            Route::put('toggle/{id}', [CompCentreController::class, 'toggle']);
+        });
     });
-
-    Route::apiResource('comp-centres', CompCentreController::class)->except(['show']);
-    Route::put('comp-centres/activate/{id}', [CompCentreController::class, 'activate']);
 
     Route::apiResource('vocatioanl-training-courses', VocationalTrainingController::class)->except(['show']);
 

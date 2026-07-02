@@ -10,6 +10,7 @@ class CompSyllabus extends Model
         'name',
         'slug',
         'file_path',
+        'file_name',
         'organisation',
         'added_by',
         'is_active'

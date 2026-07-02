@@ -36,10 +36,15 @@ class AmphanPhotoController extends Controller
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'newImage' => 'required|mimes:png,jpg,jpeg,webp|max:5120',
-            'title' => 'nullable|max:255'
-        ]);
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'newImage' => 'required|mimes:png,jpg,jpeg,webp|max:5120',
+                'title' => 'nullable|max:255'
+            ],
+            ['newImage.max' => 'Image size cannot be more than 5 MB'],
+            ['newImage' => 'Image']
+        );
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);

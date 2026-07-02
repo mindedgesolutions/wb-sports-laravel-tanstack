@@ -62,7 +62,7 @@ class SpAnnouncementRequest extends FormRequest
     {
         return [
             '*.required' => ':Attribute is required',
-            'newFile.max' => ':Attribute must be less than 2 MB',
+            'newFile.max' => ':Attribute must be less than 5 MB',
             'endDate.after_or_equal' => 'End date must be after or equal to start date',
         ];
     }

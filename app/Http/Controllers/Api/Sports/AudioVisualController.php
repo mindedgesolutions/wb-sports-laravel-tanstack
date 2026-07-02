@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\SpAudioVisual;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class AudioVisualController extends Controller
