@@ -22,12 +22,12 @@ class CompCentreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'district' => 'required|exists:districts,id',
-            'yctcName' => 'required|max:255',
-            'yctcCode' => 'nullable|max:255',
-            'address1' => 'required|min:3|max:255',
-            'address2' => 'nullable|min:3|max:255',
-            'address3' => 'nullable|min:3|max:255',
+            'districtId' => 'required|exists:districts,id',
+            'name' => 'required|max:255',
+            'code' => 'nullable|max:255',
+            'addressLine1' => 'required|min:3|max:255',
+            'addressLine2' => 'nullable|min:3|max:255',
+            'addressLine3' => 'nullable|min:3|max:255',
             'pincode' => 'nullable|digits:6',
             'inchargeMobile' => 'nullable|digits:10',
             'inchargeEmail' => 'nullable|email',
@@ -38,12 +38,12 @@ class CompCentreRequest extends FormRequest
     public function attributes()
     {
         return [
-            'district' => 'District',
-            'yctcName' => 'YCTC name',
-            'yctcCode' => 'YCTC code',
-            'address1' => 'Address line 1',
-            'address2' => 'Address line 2',
-            'address3' => 'Address line 3',
+            'districtId' => 'District',
+            'name' => 'YCTC name',
+            'code' => 'YCTC code',
+            'addressLine1' => 'Address line 1',
+            'addressLine2' => 'Address line 2',
+            'addressLine3' => 'Address line 3',
             'pincode' => 'PIN code',
             'inchargeMobile' => 'Incharge mobile',
             'inchargeEmail' => 'Incharge email',

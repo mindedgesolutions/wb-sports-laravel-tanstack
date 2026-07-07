@@ -8,39 +8,30 @@ use App\Models\CompCenter;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class CompCentreController extends Controller
 {
     public function index()
     {
+        $search = request()->query('search');
+
         $data = CompCenter::select('comp_centers.*')->with('district')
             ->join('districts', 'districts.id', '=', 'comp_centers.district_id')
-            ->when(request()->query('dist'), function ($query) {
-                return $query->where('comp_centers.district_id', request()->query('dist'));
-            })
-            ->when(request()->query('cat'), function ($query) {
-                return $query->where('comp_centers.center_category', request()->query('cat'));
-            })
-            ->when(request()->query('s'), function ($query) {
-                return $query->where('comp_centers.yctc_name', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('comp_centers.yctc_code', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('comp_centers.address_line_1', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('comp_centers.address_line_2', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('comp_centers.address_line_3', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('comp_centers.city', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('comp_centers.pincode', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('comp_centers.center_incharge_name', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('comp_centers.center_incharge_mobile', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('comp_centers.center_incharge_email', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('comp_centers.center_owner_name', 'like', '%' . request()->query('s') . '%')
-                    ->orWhere('comp_centers.center_owner_mobile', 'like', '%' . request()->query('s') . '%');
-            })
+            ->searchCentre($search)
             ->orderBy('districts.name', 'asc')
             ->orderBy('comp_centers.id', 'asc')
             ->paginate(10);
 
-        return response()->json($data, Response::HTTP_OK);
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total()
+            ]
+        ], Response::HTTP_OK);
     }
 
     // --------------------------------------------
@@ -48,13 +39,13 @@ class CompCentreController extends Controller
     public function store(CompCentreRequest $request)
     {
         CompCenter::create([
-            'district_id' => (int)$request->district,
-            'yctc_name' => trim($request->yctcName),
-            'yctc_code' => trim($request->yctcCode) ?? null,
-            'center_category' => $request->centreCategory ?? null,
-            'address_line_1' => trim($request->address1) ?? null,
-            'address_line_2' => trim($request->address2) ?? null,
-            'address_line_3' => trim($request->address3) ?? null,
+            'district_id' => (int)$request->districtId,
+            'yctc_name' => trim($request->name),
+            'yctc_code' => trim($request->code) ?? null,
+            'center_category' => $request->category ?? null,
+            'address_line_1' => trim($request->addressLine1) ?? null,
+            'address_line_2' => trim($request->addressLine2) ?? null,
+            'address_line_3' => trim($request->addressLine3) ?? null,
             'city' => trim($request->city) ?? null,
             'pincode' => $request->pincode ?? null,
             'center_incharge_name' => trim($request->inchargeName) ?? null,
@@ -63,7 +54,7 @@ class CompCentreController extends Controller
             'center_owner_name' => trim($request->ownerName) ?? null,
             'center_owner_mobile' => $request->ownerMobile ?? null,
             'added_by' => Auth::id(),
-            'slug' => Str::slug($request->yctcName),
+            'slug' => Str::slug($request->name),
         ]);
 
         return response()->json(['message' => 'Center added successfully'], Response::HTTP_CREATED);
@@ -74,13 +65,13 @@ class CompCentreController extends Controller
     public function update(CompCentreRequest $request, string $id)
     {
         CompCenter::where('id', $id)->update([
-            'district_id' => (int)$request->district,
-            'yctc_name' => $request->yctcName,
-            'yctc_code' => trim($request->yctcCode) ?? null,
-            'center_category' => $request->centreCategory ?? null,
-            'address_line_1' => trim($request->address1) ?? null,
-            'address_line_2' => trim($request->address2) ?? null,
-            'address_line_3' => trim($request->address3) ?? null,
+            'district_id' => (int)$request->districtId,
+            'yctc_name' => $request->name,
+            'yctc_code' => trim($request->code) ?? null,
+            'center_category' => $request->category ?? null,
+            'address_line_1' => trim($request->addressLine1) ?? null,
+            'address_line_2' => trim($request->addressLine2) ?? null,
+            'address_line_3' => trim($request->addressLine3) ?? null,
             'city' => trim($request->city) ?? null,
             'pincode' => $request->pincode ?? null,
             'center_incharge_name' => trim($request->inchargeName) ?? null,
@@ -88,7 +79,7 @@ class CompCentreController extends Controller
             'center_incharge_email' => $request->inchargeEmail ?? null,
             'center_owner_name' => trim($request->ownerName) ?? null,
             'center_owner_mobile' => $request->ownerMobile ?? null,
-            'slug' => Str::slug($request->yctcName),
+            'slug' => Str::slug($request->name),
         ]);
 
         return response()->json(['message' => 'Center updated successfully'], Response::HTTP_OK);
