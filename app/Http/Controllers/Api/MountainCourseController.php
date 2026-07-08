@@ -7,37 +7,48 @@ use App\Http\Requests\MountainTrainingRequest;
 use App\Models\MountainTraining;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-class MountainTrainingController extends Controller
+class MountainCourseController extends Controller
 {
     public function index()
     {
-        $data = MountainTraining::orderBy('id', 'desc')->paginate(10);
+        $search = request()->query('search');
 
-        return response()->json(['data' => $data], Response::HTTP_OK);
+        $data = MountainTraining::when($search, function ($query, $search) {
+            $query->where('name', 'ilike', "%{$search}%");
+        })
+            ->orderBy('name')
+            ->paginate(10);
+
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total()
+            ]
+        ], Response::HTTP_OK);
     }
 
-    // ---------------------------------------------
+    // -------------------------------
 
     public function store(MountainTrainingRequest $request)
     {
         $data = MountainTraining::create([
             'name' => trim($request->name),
             'slug' => Str::slug($request->name),
-            'courses_count' => $request->courseNo,
+            'courses_count' => $request->count,
             'duration' => $request->duration,
-            'age_group_start' => $request->groupStart,
-            'age_group_end' => $request->groupEnd,
-            'course_fee' => $request->courseFee ?? null,
+            'age_group_start' => $request->start,
+            'age_group_end' => $request->end,
+            'course_fee' => $request->fee ?? null,
             'remarks' => $request->remarks ? trim($request->remarks) : null,
         ]);
 
-        if ($request->file('file') && $request->file('file')[0]->getSize() > 0) {
-            $file = $request->file('file')[0];
+        if ($request->file('newFile') && $request->file('newFile')->getSize() > 0) {
+            $file = $request->file('newFile');
             $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
             $directory = 'uploads/services/mountain-courses';
             $fileOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -51,28 +62,29 @@ class MountainTrainingController extends Controller
                 'file_name' => $fileOriginalName,
             ]);
         }
-        return response()->json(['data' => 'success'], Response::HTTP_CREATED);
+
+        return response()->json(['message' => 'success'], Response::HTTP_CREATED);
     }
 
-    // ---------------------------------------------
+    // -------------------------------
 
-    public function update(MountainTrainingRequest $request, $id)
+    public function update(MountainTrainingRequest $request, string $id)
     {
         $data = MountainTraining::findOrFail($id);
 
         MountainTraining::whereId($id)->update([
             'name' => trim($request->name),
             'slug' => Str::slug($request->name),
-            'courses_count' => $request->courseNo,
+            'courses_count' => $request->count,
             'duration' => $request->duration,
-            'age_group_start' => $request->groupStart,
-            'age_group_end' => $request->groupEnd,
-            'course_fee' => $request->courseFee ?? null,
+            'age_group_start' => $request->start,
+            'age_group_end' => $request->end,
+            'course_fee' => $request->fee ?? null,
             'remarks' => $request->remarks ? trim($request->remarks) : null,
         ]);
 
-        if ($request->file('file') && $request->file('file')[0]->getSize() > 0) {
-            $file = $request->file('file')[0];
+        if ($request->file('newFile') && $request->file('newFile')->getSize() > 0) {
+            $file = $request->file('newFile');
             $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
             $directory = 'uploads/services/mountain-courses';
             $fileOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -89,45 +101,36 @@ class MountainTrainingController extends Controller
                 Storage::disk('public')->makeDirectory($directory);
             }
             $filePath = $file->storeAs($directory, $filename, 'public');
+
             MountainTraining::whereId($data->id)->update([
                 'file_path' => Storage::url($filePath),
                 'file_name' => $fileOriginalName,
             ]);
         }
 
-        return response()->json(['data' => 'success'], Response::HTTP_OK);
+        return response()->json(['message' => 'success'], Response::HTTP_OK);
     }
 
-    // ---------------------------------------------
+    // -------------------------------
 
     public function destroy(string $id)
     {
-        try {
-            DB::beginTransaction();
+        $data = MountainTraining::findOrFail($id);
+        $filePath = $data->file_path ? str_replace('/storage', '', $data->file_path) : null;
 
-            $data = MountainTraining::findOrFail($id);
-            $filePath = $data->file_path ? str_replace('/storage', '', $data->file_path) : null;
-
-            if ($filePath && Storage::disk('public')->exists($filePath)) {
-                Storage::disk('public')->delete($filePath);
-            }
-            MountainTraining::where('id', $id)->delete();
-
-            DB::commit();
-
-            return response()->json(['message' => 'deleted'], Response::HTTP_OK);
-        } catch (\Throwable $th) {
-            Log::error($th->getMessage());
-            DB::rollBack();
-            return response()->json(['message' => 'An error occurred while processing your request.'], Response::HTTP_INTERNAL_SERVER_ERROR);
+        if ($filePath && Storage::disk('public')->exists($filePath)) {
+            Storage::disk('public')->delete($filePath);
         }
+        MountainTraining::where('id', $id)->delete();
+
+        return response()->json(['message' => 'success'], Response::HTTP_NO_CONTENT);
     }
 
-    // ---------------------------------------------
+    // -------------------------------
 
-    public function activate(Request $request, $id)
+    public function toggle(Request $request, String $id)
     {
-        MountainTraining::where('id', $id)->update(['is_active' => $request->is_active]);
+        MountainTraining::where('id', $id)->update(['is_active' => $request->checked]);
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }

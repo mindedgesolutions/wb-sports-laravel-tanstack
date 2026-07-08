@@ -8,19 +8,11 @@ use Illuminate\Support\Str;
 
 class MountainTrainingRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
@@ -34,14 +26,13 @@ class MountainTrainingRequest extends FormRequest
                     $fail('Course exists');
                 }
             }],
-            'courseNo' => ['required', 'integer', 'min:1'],
+            'count' => ['required', 'integer', 'min:1'],
             'duration' => ['required', 'integer', 'min:1'],
-            'groupStart' => ['required', 'integer'],
-            'groupEnd' => ['required', 'integer', 'after_or_equal:groupStart'],
-            'courseFee' => ['nullable', 'integer'],
+            'start' => ['required', 'integer'],
+            'end' => ['required', 'integer', 'after_or_equal:start'],
+            'fee' => ['nullable', 'integer'],
             'remarks' => ['nullable', 'max:255'],
-            'file' => ['nullable', 'file', 'array'],
-            'file.*' => ['nullable', 'file', 'max:2048']
+            'newFile' => ['nullable', 'file', 'max:5120']
         ];
     }
 
@@ -49,11 +40,12 @@ class MountainTrainingRequest extends FormRequest
     {
         return [
             'name' => 'course name',
-            'courseNo' => 'no. of courses',
+            'count' => 'no. of courses',
             'duration' => 'duration (days)',
-            'groupStart' => 'startng age group',
-            'groupEnd' => 'ending age group',
-            'courseFee' => 'course fee',
+            'start' => 'startng age group',
+            'end' => 'ending age group',
+            'fee' => 'course fee',
+            'newFile' => 'attchment'
         ];
     }
 
@@ -63,7 +55,7 @@ class MountainTrainingRequest extends FormRequest
             '*.required' => ':Attribute is required',
             '*.integer' => ':Attribute must be a no.',
             '*.after_or_equal' => ':Attribute must be after or equal to the starting age group',
-            '*.max' => ':Attribute must not be greater than 2MB',
+            '*.max' => ':Attribute must not be greater than 5MB',
             '*.file' => 'Invalid file type',
         ];
     }

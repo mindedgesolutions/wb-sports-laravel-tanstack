@@ -9,8 +9,8 @@ use App\Http\Controllers\Api\ComputerTraining;
 use App\Http\Controllers\Api\DistrictBlockOfficeController;
 use App\Http\Controllers\Api\DownloadController;
 use App\Http\Controllers\Api\FairProgrammeController;
-use App\Http\Controllers\Api\MountaineeringController;
-use App\Http\Controllers\Api\MountainTrainingController;
+use App\Http\Controllers\Api\MountainCourseController;
+use App\Http\Controllers\Api\MountainGeneralBodyController;
 use App\Http\Controllers\Api\NewsEventsController;
 use App\Http\Controllers\Api\OrganisationChartController;
 use App\Http\Controllers\Api\ServiceTenderController;
@@ -41,7 +41,8 @@ use App\Http\Controllers\Api\Sports\SportsPersonnelController;
 use App\Http\Controllers\Api\Sports\SportsWebsiteController;
 use App\Http\Controllers\Api\Sports\StadiumController;
 use App\Http\Controllers\Api\Sports\WbsCouncilDesignationController;
-use App\Http\Controllers\Api\VocationalTrainingController;
+use App\Http\Controllers\Api\VocationalCentreController;
+use App\Http\Controllers\Api\VocationalSchemeController;
 use App\Http\Controllers\Api\YouthHostelController;
 use App\Http\Controllers\UpdateDataController;
 
@@ -130,41 +131,43 @@ Route::middleware(['cookie.auth:services', 'auth:api'])->prefix('services')->gro
         });
     });
 
-    Route::apiResource('vocatioanl-training-courses', VocationalTrainingController::class)->except(['show']);
-
-    Route::controller(VocationalTrainingController::class)->prefix('vocational')->group(function () {
-        Route::prefix('content')->group(function () {
-            Route::post('store-content', 'storeContent');
-            Route::put('activate-content/{id}', 'activateContent');
-            Route::put('update-content/{id}', 'updateContent');
-            Route::delete('destroy-content/{id}', 'destroyContent');
-            Route::get('index-content', 'indexContent');
-            Route::get('all', 'vocSchemeAll');
-            Route::put('set-order', 'vocSchemeSetOrder');
+    Route::prefix('vocatioanl-training')->group(function () {
+        // prefix: /services/vocatioanl-training/schemes
+        Route::prefix('schemes')->group(function () {
+            Route::put('sort', [VocationalSchemeController::class, 'sort']);
+            Route::apiResource('', VocationalSchemeController::class)
+                ->parameters(['' => 'id'])
+                ->except(['show']);
+            Route::get('all', [VocationalSchemeController::class, 'all']);
+            Route::put('toggle/{id}', [VocationalSchemeController::class, 'toggle']);
         });
-        Route::prefix('centre-list')->group(function () {
-            Route::post('store-centre', 'storeCentre');
-            Route::put('activate-centre/{id}', 'activateCentre');
-            Route::put('update-centre/{id}', 'updateCentre');
-            Route::delete('destroy-centre/{id}', 'destroyCentre');
-            Route::get('index-centre', 'indexCentre');
+
+        // prefix: /services/vocatioanl-training/training-centres
+        Route::prefix('training-centres')->group(function () {
+            Route::apiResource('', VocationalCentreController::class)
+                ->parameters(['' => 'id'])
+                ->except(['show']);
+            Route::put('toggle/{id}', [VocationalCentreController::class, 'toggle']);
         });
     });
 
-    Route::controller(MountaineeringController::class)->prefix('mountain')->group(function () {
+    Route::prefix('mountaineering')->group(function () {
+        // prefix: /services/mountaineering/general-body
         Route::prefix('general-body')->group(function () {
-            Route::get('list', 'gbIndex');
-            Route::post('store', 'gbStore');
-            Route::put('update/{id}', 'gbUpdate');
-            Route::delete('delete/{id}', 'gbDestroy');
-            Route::get('all', 'gbMembersAll');
-            Route::put('set-order', 'gbMembersSetOrder');
+            Route::put('sort', [MountainGeneralBodyController::class, 'sort']);
+            Route::apiResource('', MountainGeneralBodyController::class)
+                ->parameters(['' => 'id'])
+                ->except(['show']);
+            Route::get('all', [MountainGeneralBodyController::class, 'all']);
+            Route::put('toggle/{id}', [MountainGeneralBodyController::class, 'toggle']);
         });
-        Route::prefix('training-calendar')->group(function () {
-            Route::get('list', 'tcIndex');
-            Route::post('store', 'tcStore');
-            Route::put('update/{id}', 'tcUpdate');
-            Route::delete('delete/{id}', 'tcDestroy');
+
+        // prefix: /services/mountaineering/course-details
+        Route::prefix('course-details')->group(function () {
+            Route::apiResource('', MountainCourseController::class)
+                ->parameters(['' => 'id'])
+                ->except(['show']);
+            Route::put('toggle/{id}', [MountainCourseController::class, 'toggle']);
         });
     });
 
@@ -192,12 +195,6 @@ Route::middleware(['cookie.auth:services', 'auth:api'])->prefix('services')->gro
     Route::apiResource('news-events', NewsEventsController::class)->except(['show', 'update']);
     Route::put('news-events/activate/{id}', [NewsEventsController::class, 'activate']);
     Route::post('news-events/update/{id}', [NewsEventsController::class, 'updateNews']);
-
-    Route::apiResource('mountain-trainings', MountainTrainingController::class)->except(['show']);
-    Route::controller(MountainTrainingController::class)->prefix('mountain-trainings')->group(function () {
-        Route::post('update/{id}', 'update');
-        Route::put('activate/{id}', 'activate');
-    });
 
     Route::apiResource('e-tenders', ServiceTenderController::class)->except(['show', 'update']);
     Route::controller(ServiceTenderController::class)->prefix('e-tenders')->group(function () {

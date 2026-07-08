@@ -14,4 +14,9 @@ class VocationalTrainingCentre extends Model
         'phone',
         'is_active',
     ];
+
+    public function districts()
+    {
+        return $this->belongsTo(District::class);
+    }
 }
