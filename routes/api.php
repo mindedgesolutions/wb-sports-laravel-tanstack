@@ -171,21 +171,12 @@ Route::middleware(['cookie.auth:services', 'auth:api'])->prefix('services')->gro
         });
     });
 
-    Route::controller(FairProgrammeController::class)->prefix('fair-programme')->group(function () {
-        Route::get('list', 'fpList');
-        Route::post('store', 'fpStore');
-        Route::get('edit/{uuid}', 'fpEdit');
-        Route::post('update/{uuid}', 'fpUpdate');
-        Route::delete('delete/{id}', 'fpDestroy');
-        // ------------Gallery related starts ---------------
-        Route::prefix('gallery')->group(function () {
-            Route::post('store', 'fpGalleryStore');
-            Route::post('update/{id}', 'fpGalleryUpdate');
-            Route::delete('delete/{id}', 'fpGalleryDestroy');
-            Route::delete('delete-image/{id}', 'fpGalleryImageDestroy');
-            Route::put('show/{id}', 'fpShowInGallery');
-        });
-        // ------------Gallery related ends -----------------
+    // prefix: /services/fair-programmes
+    Route::prefix('fair-programmes')->group(function () {
+        Route::put('toggle/{id}', [FairProgrammeController::class, 'toggle']);
+        Route::post('photos/{id}', [FairProgrammeController::class, 'upload']);
+        Route::apiResource('', FairProgrammeController::class)
+            ->parameters(['' => 'id']);
     });
 
     Route::apiResource('youth-hostels', YouthHostelController::class)->except(['update']);

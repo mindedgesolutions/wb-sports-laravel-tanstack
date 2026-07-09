@@ -21,6 +21,7 @@ class FairProgramResource extends JsonResource
             'slug' => $this->slug,
             'occurance' => $this->occurance,
             'description' => $this->description,
+            'event_date' => $this->event_date,
             'uuid' => $this->uuid,
             'added_by' => $this->added_by,
             'updated_by' => $this->updated_by,
@@ -28,9 +29,7 @@ class FairProgramResource extends JsonResource
             'updated_at' => $this->updated_at,
             'organisation' => $this->organisation,
             'cover_image' => $this->cover_image,
-            'show_in_gallery' => $this->show_in_gallery,
-            'gallery' => $this->gallery,
-            'gallery_images' => $this->gallery->pluck('images')->flatten(),
+            'images' => $this->images,
         ];
     }
 }

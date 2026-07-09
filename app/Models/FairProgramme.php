@@ -15,11 +15,18 @@ class FairProgramme extends Model
         'added_by',
         'updated_by',
         'organisation',
-        'cover_image'
+        'cover_image',
+        'is_active',
+        'event_date'
     ];
 
     public function gallery()
     {
         return $this->hasMany(FairProgrammeGallery::class, 'program_id')->orderBy('id', 'asc');
+    }
+
+    public function images()
+    {
+        return $this->hasMany(FairProgrammGalleryImage::class, 'gallery_id');
     }
 }

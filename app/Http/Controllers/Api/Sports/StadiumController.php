@@ -274,7 +274,7 @@ class StadiumController extends Controller
 
     // ------------------------------------------------
 
-    public function destroy($id)
+    public function destroy(String $id)
     {
         $stadium = SpStadium::findOrFail($id);
 
@@ -318,7 +318,7 @@ class StadiumController extends Controller
 
     //  ------------------------------------------------
 
-    public function toggle(Request $request, $id)
+    public function toggle(Request $request, String $id)
     {
         SpStadium::whereId($id)->update(['is_active' => $request->checked]);
 
