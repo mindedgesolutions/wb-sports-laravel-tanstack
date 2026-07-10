@@ -11,8 +11,10 @@ class NewsEvent extends Model
         'slug',
         'description',
         'file_path',
+        'file_name',
         'is_active',
         'event_date',
         'type',
+        'event_year'
     ];
 }

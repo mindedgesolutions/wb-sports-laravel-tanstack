@@ -4,8 +4,8 @@ namespace App\Http\Requests;
 
 use App\Models\NewsEvent;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class NewsEventsRequest extends FormRequest
 {
@@ -14,18 +14,10 @@ class NewsEventsRequest extends FormRequest
         return true;
     }
 
-    public function prepareForValidation()
-    {
-        if ($this->eventDate && $this->eventDate !== '') {
-            $this->merge([
-                'eventDate' => Date::createFromFormat('d/m/Y', $this->eventDate)
-            ]);
-        }
-    }
-
     public function rules(): array
     {
         return [
+            'type' => ['required'],
             'title' => ['required', 'max:255', function ($attribute, $value, $fail) {
                 $slug = Str::slug($value);
                 $check = NewsEvent::where('slug', $slug)
@@ -38,8 +30,12 @@ class NewsEventsRequest extends FormRequest
                 }
             }],
             'eventDate' => ['nullable', 'date', 'before_or_equal:today'],
-            'file' => 'nullable|file|array',
-            'file.*' => 'nullable|file|max:2048',
+            'newFile' => [
+                'nullable',
+                Rule::requiredIf(!$this->id),
+                'file',
+                'max:5120'
+            ],
         ];
     }
 
@@ -48,7 +44,7 @@ class NewsEventsRequest extends FormRequest
         return [
             'title' => 'Title',
             'eventDate' => 'Event date',
-            'file' => 'File',
+            'newFile' => 'Attachment',
         ];
     }
 

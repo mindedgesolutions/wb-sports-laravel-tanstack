@@ -7,7 +7,6 @@ use App\Http\Requests\NewsEventsRequest;
 use App\Models\NewsEvent;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -17,8 +16,23 @@ class NewsEventsController extends Controller
 {
     public function index()
     {
-        $data = NewsEvent::orderBy('event_date', 'desc')->paginate(10);
-        return response()->json(['data' => $data], Response::HTTP_OK);
+        $search = request()->query('search');
+
+        $data = NewsEvent::when($search, function ($query, $search) {
+            $query->where('title', 'ilike', "%{$search}%")
+                ->orWhere('description', 'ilike', "%{$search}%");
+        })
+            ->orderBy('event_date', 'desc')
+            ->paginate(10);
+
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total()
+            ]
+        ], Response::HTTP_OK);
     }
 
     // -----------------------------------------------
@@ -28,42 +42,33 @@ class NewsEventsController extends Controller
         try {
             DB::beginTransaction();
 
-            $eventSlug = Str::slug($request->title);
-            $check = NewsEvent::where('slug', $eventSlug)->first();
-            $filePath = '';
-            $eventYear = date('Y', strtotime($request->eventDate));
+            $eventDate = explode('-', $request->eventDate);
 
-            if ($request->hasFile('file')) {
-                $file = $request->file('file')[0];
+            $data = NewsEvent::create([
+                'title' => trim($request->title),
+                'slug' => Str::slug($request->title),
+                'description' => $request->description ? trim($request->description) : null,
+                'event_date' => $request->eventDate,
+                'type' => $request->type,
+                'event_year' => $eventDate[0],
+            ]);
+
+            if ($request->hasFile('newFile')) {
+                $file = $request->file('newFile');
                 $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
                 $directory = 'uploads/services/news-events';
+                $fileOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
 
                 if (!Storage::disk('public')->exists($directory)) {
                     Storage::disk('public')->makeDirectory($directory);
                 }
-
-                if ($check) {
-                    $deletePath = str_replace('/storage', '', $check->file_path);
-
-                    if (Storage::disk('public')->exists($deletePath)) {
-                        Storage::disk('public')->delete($deletePath);
-                    }
-                }
-
                 $filePath = $file->storeAs($directory, $filename, 'public');
+
+                NewsEvent::whereId($data->id)->update([
+                    'file_path' => Storage::url($filePath),
+                    'file_name' => $fileOriginalName
+                ]);
             }
-
-            NewsEvent::create([
-                'title' => trim($request->title),
-                'slug' => $eventSlug,
-                'description' => $request->description ? trim($request->description) : null,
-                'file_path' => Storage::url($filePath),
-                'event_date' => date('Y-m-d', strtotime($request->eventDate)),
-                'type' => $request->type,
-                'event_year' => $eventYear,
-            ]);
-
-
             DB::commit();
 
             return response()->json(['message' => 'success'], Response::HTTP_CREATED);
@@ -76,20 +81,28 @@ class NewsEventsController extends Controller
 
     // -----------------------------------------------
 
-    public function updateNews(NewsEventsRequest $request, string $id)
+    public function update(NewsEventsRequest $request, string $id)
     {
         $data = NewsEvent::whereId($id)->first();
-        $eventYear = date('Y', strtotime($request->eventDate));
+        $eventDate = explode('-', $request->eventDate);
 
         try {
             DB::beginTransaction();
 
-            $filePath = '';
+            NewsEvent::whereId($id)->update([
+                'title' => trim($request->title),
+                'slug' => Str::slug($request->title),
+                'description' => $request->description ? trim($request->description) : null,
+                'event_date' => $request->eventDate,
+                'type' => $request->type,
+                'event_year' => $eventDate[0],
+            ]);
 
-            if ($request->hasFile('file') && $request->file('file')[0]->getSize() > 0) {
-                $file = $request->file('file')[0];
+            if ($request->hasFile('newFile') && $request->file('newFile')->getSize() > 0) {
+                $file = $request->file('newFile');
                 $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
                 $directory = 'uploads/services/news-events';
+                $fileOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
 
                 if (!Storage::disk('public')->exists($directory)) {
                     Storage::disk('public')->makeDirectory($directory);
@@ -102,18 +115,13 @@ class NewsEventsController extends Controller
                         Storage::disk('public')->delete($deletePath);
                     }
                 }
-
                 $filePath = $file->storeAs($directory, $filename, 'public');
-            }
 
-            NewsEvent::where('id', $id)->update([
-                'title' => trim($request->title),
-                'description' => $request->description ? trim($request->description) : null,
-                'file_path' => $request->hasFile('file') ? Storage::url($filePath) : $data->file_path,
-                'event_date' => date('Y-m-d', strtotime($request->eventDate)),
-                'type' => $request->type,
-                'event_year' => $eventYear,
-            ]);
+                NewsEvent::whereId($id)->update([
+                    'file_path' => Storage::url($filePath),
+                    'file_name' => $fileOriginalName
+                ]);
+            }
 
             DB::commit();
 
@@ -129,33 +137,22 @@ class NewsEventsController extends Controller
 
     public function destroy(string $id)
     {
-        try {
-            DB::beginTransaction();
+        $data = NewsEvent::findOrFail($id);
+        $filePath = str_replace('/storage', '', $data->file_path);
 
-            $data = NewsEvent::findOrFail($id);
-            $filePath = str_replace('/storage', '', $data->file_path);
-
-            if (Storage::disk('public')->exists($filePath)) {
-                Storage::disk('public')->delete($filePath);
-            }
-
-            NewsEvent::where('id', $id)->delete();
-
-            DB::commit();
-
-            return response()->json(['message' => 'success'], Response::HTTP_OK);
-        } catch (\Throwable $th) {
-            Log::error($th->getMessage());
-            DB::rollBack();
-            return response()->json(['message' => $th->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
+        if (Storage::disk('public')->exists($filePath)) {
+            Storage::disk('public')->delete($filePath);
         }
+        NewsEvent::where('id', $id)->delete();
+
+        return response()->json(['message' => 'success'], Response::HTTP_OK);
     }
 
     // -----------------------------------------------
 
-    public function activate(Request $request, $id)
+    public function toggle(Request $request, String $id)
     {
-        NewsEvent::whereId($id)->update(['is_active' => $request->is_active]);
+        NewsEvent::whereId($id)->update(['is_active' => $request->checked]);
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }

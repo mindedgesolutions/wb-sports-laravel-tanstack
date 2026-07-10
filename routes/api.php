@@ -171,21 +171,24 @@ Route::middleware(['cookie.auth:services', 'auth:api'])->prefix('services')->gro
         });
     });
 
-    // prefix: /services/fair-programmes
-    Route::prefix('fair-programmes')->group(function () {
+    // prefix: /services/fair-programmes/fair-programmes
+    Route::prefix('fair-programmes/fair-programmes')->group(function () {
         Route::put('toggle/{id}', [FairProgrammeController::class, 'toggle']);
         Route::post('photos/{id}', [FairProgrammeController::class, 'upload']);
         Route::apiResource('', FairProgrammeController::class)
             ->parameters(['' => 'id']);
     });
 
+    // prefix: /services/news-events/news-events
+    Route::prefix('news-events/news-events')->group(function () {
+        Route::put('toggle/{id}', [NewsEventsController::class, 'toggle']);
+        Route::apiResource('', NewsEventsController::class)
+            ->parameters(['' => 'id']);
+    });
+
     Route::apiResource('youth-hostels', YouthHostelController::class)->except(['update']);
     Route::post('youth-hostels/update/{id}', [YouthHostelController::class, 'youthHostelUpdate']);
     Route::put('youth-hostels/activate/{id}', [YouthHostelController::class, 'activate']);
-
-    Route::apiResource('news-events', NewsEventsController::class)->except(['show', 'update']);
-    Route::put('news-events/activate/{id}', [NewsEventsController::class, 'activate']);
-    Route::post('news-events/update/{id}', [NewsEventsController::class, 'updateNews']);
 
     Route::apiResource('e-tenders', ServiceTenderController::class)->except(['show', 'update']);
     Route::controller(ServiceTenderController::class)->prefix('e-tenders')->group(function () {
