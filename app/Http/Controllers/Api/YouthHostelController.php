@@ -8,6 +8,7 @@ use App\Models\YouthHostel;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -15,72 +16,103 @@ class YouthHostelController extends Controller
 {
     public function index()
     {
-        $data = YouthHostel::orderBy('id', 'desc')->paginate(10);
+        $search = request()->query('search');
 
-        return response()->json(['data' => $data], Response::HTTP_OK);
+        $data = YouthHostel::searchHostel($search)
+            ->orderBy('id', 'desc')
+            ->paginate(10);
+
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total()
+            ]
+        ], Response::HTTP_OK);
     }
 
     // -------------------------------------------------
 
     public function store(YouthHostelRequest $request)
     {
-        if ($request->hasFile('cover') && $request->file('cover')[0]->getSize() > 0) {
-            $file = $request->file('cover')[0];
-            $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
-            $directory = 'uploads/services/hostels';
-
-            if (!Storage::disk('public')->exists($directory)) {
-                Storage::disk('public')->makeDirectory($directory);
-            }
-
-            $filePath = $file->storeAs($directory, $filename, 'public');
-        } else {
-            $filePath = null;
-        }
-
-        YouthHostel::create([
+        $data = YouthHostel::create([
+            'district_id' => $request->districtId,
             'name' => trim($request->name),
             'slug' => Str::slug($request->name),
             'address' => trim($request->address),
-            'phone_1' => $request->phone1 ? trim($request->phone1) : null,
-            'phone_2' => $request->phone2 ? trim($request->phone2) : null,
+            'phone_1' => $request->phone_1 ? trim($request->phone_1) : null,
+            'phone_2' => $request->phone_2 ? trim($request->phone_2) : null,
             'email' => $request->email ? trim($request->email) : null,
             'accommodation' => $request->accommodation ? trim($request->accommodation) : null,
-            'how_to_reach' => $request->howtoReach ? trim($request->howtoReach) : null,
-            'railway_station' => trim($request->railwayStation),
+            'how_to_reach' => $request->reach ? trim($request->reach) : null,
+            'railway_station' => trim($request->trainStation),
             'bus_stop' => $request->busStop ? trim($request->busStop) : null,
             'airport' => $request->airport ? trim($request->airport) : null,
             'road_network' => $request->network ? trim($request->network) : null,
             'remarks' => $request->remarks ? trim($request->remarks) : null,
-            'district_id' => $request->district,
-            'hostel_img' => $filePath ? Storage::url($filePath) : null,
             'added_by' => Auth::id(),
             'uuid' => Str::uuid(),
         ]);
 
+        if ($request->hasFile('newImg') && $request->file('newImg')->getSize() > 0) {
+            $file = $request->file('newImg');
+            $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
+            $directory = 'uploads/services/hostels';
+
+            if ($data->hostel_img) {
+                $deletePath = str_replace('/storage', '', $data->hostel_img);
+                if (Storage::disk('public')->exists($deletePath)) {
+                    Storage::disk('public')->delete($deletePath);
+                }
+            }
+
+            if (!Storage::disk('public')->exists($directory)) {
+                Storage::disk('public')->makeDirectory($directory);
+            }
+            $filePath = $file->storeAs($directory, $filename, 'public');
+
+            $data->hostel_img = Storage::url($filePath);
+            $data->save();
+        } else {
+            $filePath = null;
+        }
         return response()->json(['message' => 'success'], Response::HTTP_CREATED);
     }
 
     // -------------------------------------------------
 
-    public function show($uuid)
+    public function show(String $id)
     {
-        $data = YouthHostel::where('uuid', $uuid)->first();
-
-        if (!$data) {
-            return response()->json(['message' => 'Youth hostel not found.'], Response::HTTP_NOT_FOUND);
-        }
+        $data = YouthHostel::findOrFail($id);
 
         return response()->json(['data' => $data], Response::HTTP_OK);
     }
 
     // --------------------------------------------------
 
-    public function youthHostelUpdate(YouthHostelRequest $request, string $id)
+    public function update(YouthHostelRequest $request, string $id)
     {
         $data = YouthHostel::findOrFail($id);
 
-        if ($request->hasFile('cover') && $request->file('cover')[0]->getSize() > 0) {
+        YouthHostel::whereId($id)->update([
+            'district_id' => $request->districtId,
+            'name' => trim($request->name),
+            'slug' => Str::slug($request->name),
+            'address' => trim($request->address),
+            'phone_1' => $request->phone_1 ? trim($request->phone_1) : null,
+            'phone_2' => $request->phone_2 ? trim($request->phone_2) : null,
+            'email' => $request->email ? trim($request->email) : null,
+            'accommodation' => $request->accommodation ? trim($request->accommodation) : null,
+            'how_to_reach' => $request->reach ? trim($request->reach) : null,
+            'railway_station' => trim($request->trainStation),
+            'bus_stop' => $request->busStop ? trim($request->busStop) : null,
+            'airport' => $request->airport ? trim($request->airport) : null,
+            'road_network' => $request->network ? trim($request->network) : null,
+            'remarks' => $request->remarks ? trim($request->remarks) : null,
+        ]);
+
+        if ($request->hasFile('newImg') && $request->file('newImg')->getSize() > 0) {
             if ($data) {
                 $deletePath = str_replace('/storage', '', $data->hostel_img);
 
@@ -89,37 +121,19 @@ class YouthHostelController extends Controller
                 }
             }
 
-            $file = $request->file('cover')[0];
+            $file = $request->file('newImg');
             $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
             $directory = 'uploads/services/hostels';
 
             if (!Storage::disk('public')->exists($directory)) {
                 Storage::disk('public')->makeDirectory($directory);
             }
-
             $filePath = $file->storeAs($directory, $filename, 'public');
-        } else {
-            $filePath = null;
+
+            YouthHostel::whereId($id)->update([
+                'hostel_img' => Storage::url($filePath)
+            ]);
         }
-
-        $data->update([
-            'name' => trim($request->name),
-            'slug' => Str::slug($request->name),
-            'address' => trim($request->address),
-            'phone_1' => $request->phone1 ? trim($request->phone1) : null,
-            'phone_2' => $request->phone2 ? trim($request->phone2) : null,
-            'email' => $request->email ? trim($request->email) : null,
-            'accommodation' => $request->accommodation ? trim($request->accommodation) : null,
-            'how_to_reach' => $request->howtoReach ? trim($request->howtoReach) : null,
-            'railway_station' => trim($request->railwayStation),
-            'bus_stop' => $request->busStop ? trim($request->busStop) : null,
-            'airport' => $request->airport ? trim($request->airport) : null,
-            'road_network' => $request->network ? trim($request->network) : null,
-            'remarks' => $request->remarks ? trim($request->remarks) : null,
-            'district_id' => $request->district,
-            'hostel_img' => $filePath ? Storage::url($filePath) : $data->hostel_img ?? null,
-        ]);
-
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }
 
@@ -144,10 +158,10 @@ class YouthHostelController extends Controller
 
     // -------------------------------------------------
 
-    public function activate(Request $request, $id)
+    public function toggle(Request $request, String $id)
     {
         YouthHostel::where('id', $id)->update([
-            'is_active' => $request->is_active,
+            'is_active' => $request->checked,
         ]);
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);

@@ -35,28 +35,28 @@ class YouthHostelRequest extends FormRequest
                     return $fail('Hostel name exists');
                 }
             }],
-            'district' => 'required|exists:districts,id',
+            'districtId' => ['required', 'exists:districts,id'],
             'address' => 'required',
-            'phone1' => 'nullable|digits:10',
-            'phone2' => 'nullable|digits:10',
-            'email' => 'nullable|email',
-            'accommodation' => 'nullable|max:255',
-            'railwayStation' => 'required|max:255',
-            'busStop' => 'nullable|max:255',
-            'airport' => 'nullable|max:255',
-            'network' => 'nullable|max:255',
-            'remarks' => 'nullable|max:255',
-            'hostelImg' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,svg|max:100',
+            'phone_1' => ['nullable', 'digits:10'],
+            'phone_2' => ['nullable', 'digits:10'],
+            'email' => ['nullable', 'email'],
+            'accommodation' => ['nullable', 'max:255'],
+            'trainStation' => ['required', 'max:255'],
+            'busStop' => ['nullable', 'max:255'],
+            'airport' => ['nullable', 'max:255'],
+            'network' => ['nullable', 'max:255'],
+            'remarks' => ['nullable', 'max:255'],
+            'newImg' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:5120'],
         ];
     }
 
     public function attributes()
     {
         return [
-            'phone1' => 'phone no. 1',
-            'phone2' => 'phone no. 2',
+            'phone_1' => 'phone no. 1',
+            'phone_2' => 'phone no. 2',
             'accommodation' => 'accommodation type',
-            'railwayStation' => 'railway station',
+            'trainStation' => 'railway station',
             'busStop' => 'bus stop',
             'network' => 'road transportation network',
         ];
@@ -66,11 +66,11 @@ class YouthHostelRequest extends FormRequest
     {
         return [
             '*.required' => ':Attribute is required',
-            'phone1.digits' => ':Attribute must be 10 digits',
-            'phone2.digits' => ':Attribute must be 10 digits',
+            'phone_1.digits' => ':Attribute must be 10 digits',
+            'phone_2.digits' => ':Attribute must be 10 digits',
             'email.email' => 'Invalid email address',
             'accommodation.required' => 'Accommodation type is required',
-            'railwayStation.required' => 'Railway station is required',
+            'trainStation.required' => 'Railway station is required',
         ];
     }
 }

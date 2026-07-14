@@ -186,9 +186,12 @@ Route::middleware(['cookie.auth:services', 'auth:api'])->prefix('services')->gro
             ->parameters(['' => 'id']);
     });
 
-    Route::apiResource('youth-hostels', YouthHostelController::class)->except(['update']);
-    Route::post('youth-hostels/update/{id}', [YouthHostelController::class, 'youthHostelUpdate']);
-    Route::put('youth-hostels/activate/{id}', [YouthHostelController::class, 'activate']);
+    // prefix: /services/youth-hostels/youth-hostels
+    Route::prefix('youth-hostels/youth-hostels')->group(function () {
+        Route::put('toggle/{id}', [YouthHostelController::class, 'toggle']);
+        Route::apiResource('', YouthHostelController::class)
+            ->parameters(['' => 'id']);
+    });
 
     Route::apiResource('e-tenders', ServiceTenderController::class)->except(['show', 'update']);
     Route::controller(ServiceTenderController::class)->prefix('e-tenders')->group(function () {
