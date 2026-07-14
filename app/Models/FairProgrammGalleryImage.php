@@ -10,14 +10,4 @@ class FairProgrammGalleryImage extends Model
         'gallery_id',
         'image_path',
     ];
-
-    public function gallery()
-    {
-        return $this->belongsTo(FairProgrammeGallery::class, 'gallery_id', 'id');
-    }
-
-    public function images()
-    {
-        return $this->belongsTo(FairProgramme::class, 'gallery_id', 'id');
-    }
 }

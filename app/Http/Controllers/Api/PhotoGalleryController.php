@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\FairProgramResource;
-use App\Models\FairProgramme;
+use App\Http\Resources\FairProgrammeGalleryResource;
+use App\Models\FairProgrammeGallery;
 use App\Models\FairProgrammGalleryImage;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -13,13 +13,13 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
-class FairProgrammeController extends Controller
+class PhotoGalleryController extends Controller
 {
     public function index()
     {
         $search = request()->query('search');
 
-        $data = FairProgramme::withCount('images')
+        $data = FairProgrammeGallery::withCount('images')
             ->with([
                 'images' => function ($query) {
                     $query->latest()->limit(3);
@@ -28,6 +28,7 @@ class FairProgrammeController extends Controller
             ->when($search, function ($query, $search) {
                 $query->where('title', 'ilike', "%{$search}%");
             })
+            ->orderBy('programme_date', 'desc')
             ->orderBy('id', 'desc')
             ->paginate(10);
 
@@ -36,12 +37,12 @@ class FairProgrammeController extends Controller
             'meta' => [
                 'current_page' => $data->currentPage(),
                 'last_page' => $data->lastPage(),
-                'total' => $data->total(),
+                'total' => $data->total()
             ]
         ], Response::HTTP_OK);
     }
 
-    // ------------------------------------
+    // --------------------------------------------------
 
     public function store(Request $request)
     {
@@ -54,21 +55,19 @@ class FairProgrammeController extends Controller
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $data = FairProgramme::create([
+        $data = FairProgrammeGallery::create([
             'title' => trim($request->title),
             'slug' => Str::slug($request->title),
-            'occurance' => 'one-time',
+            'programme_date' => $request->programDate ?? null,
             'description' => $request->description ? trim($request->description) : null,
-            'uuid' => Str::uuid(),
             'added_by' => Auth::id(),
-            'organisation' => 'services',
-            'event_date' => $request->eventDate ?? null,
+            'is_active' => true
         ]);
 
         if ($request->file('coverImg') && $request->file('coverImg')->getSize() > 0) {
             $file = $request->file('coverImg');
             $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
-            $directory = 'uploads/services/fairs-programmes/' . $data->id;
+            $directory = 'uploads/services/photo-galleries/' . $data->id;
 
             if ($data->cover_image) {
                 $deletePath = str_replace('/storage', '', $data->cover_image);
@@ -88,7 +87,7 @@ class FairProgrammeController extends Controller
         return response()->json(['data' => $data], Response::HTTP_CREATED);
     }
 
-    // ------------------------------------
+    // --------------------------------------------------
 
     public function update(Request $request, string $id)
     {
@@ -102,7 +101,7 @@ class FairProgrammeController extends Controller
         }
 
         $keepImages = explode(',', $request->existingGalleryImg);
-        $data = FairProgramme::with('images')->findOrFail($id);
+        $data = FairProgrammeGallery::with('images')->findOrFail($id);
 
         if ($data->images->isNotEmpty()) {
             $data->images->each(
@@ -118,18 +117,18 @@ class FairProgrammeController extends Controller
             );
         }
 
-        FairProgramme::whereId($id)->update([
+        FairProgrammeGallery::whereId($id)->update([
             'title' => trim($request->title),
             'slug' => Str::slug($request->title),
             'description' => $request->description ? trim($request->description) : null,
             'updated_by' => Auth::id(),
-            'event_date' => $request->eventDate ?? null,
+            'programme_date' => $request->programDate ?? null,
         ]);
 
         if ($request->file('coverImg') && $request->file('coverImg')->getSize() > 0) {
             $file = $request->file('coverImg');
             $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
-            $directory = 'uploads/services/fairs-programmes/' . $id;
+            $directory = 'uploads/services/photo-galleries/' . $id;
 
             if ($data->cover_img) {
                 $deletePath = str_replace('/storage', '', $data->cover_img);
@@ -147,12 +146,12 @@ class FairProgrammeController extends Controller
             $data->save();
         }
 
-        $updated = FairProgramme::with('images')->findOrFail($id);
+        $updated = FairProgrammeGallery::with('images')->findOrFail($id);
 
         return response()->json(['data' => $updated], Response::HTTP_OK);
     }
 
-    // ------------------------------------
+    // --------------------------------------------------
 
     public function upload(Request $request, string $id)
     {
@@ -161,7 +160,7 @@ class FairProgrammeController extends Controller
         if ($request->hasFile('galleryImg')) {
             foreach ($request->file('galleryImg') as $file) {
                 $filename = Str::ulid() . '.' . $file->extension();
-                $directory = "uploads/services/fairs-programmes/{$id}";
+                $directory = "uploads/services/photo-galleries/{$id}";
 
                 $filePath = $file->storeAs(
                     $directory,
@@ -184,33 +183,33 @@ class FairProgrammeController extends Controller
         return response()->json(['message' => 'success'], Response::HTTP_CREATED);
     }
 
-    // ------------------------------------
+    // --------------------------------------------------
 
     public function show(string $id)
     {
-        $data = FairProgramme::findOrFail($id);
+        $data = FairProgrammeGallery::findOrFail($id);
 
-        return FairProgramResource::make($data);
+        return FairProgrammeGalleryResource::make($data);
     }
 
-    // ------------------------------------
+    // --------------------------------------------------
 
     public function destroy(string $id)
     {
-        $directory = 'uploads/services/fairs-programmes/' . $id;
+        $directory = 'uploads/services/photo-galleries/' . $id;
         Storage::disk('public')->deleteDirectory($directory);
 
         FairProgrammGalleryImage::where('gallery_id')->delete();
-        FairProgramme::whereId($id)->delete();
+        FairProgrammeGallery::whereId($id)->delete();
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }
 
-    // ------------------------------------
+    // --------------------------------------------------
 
     public function toggle(Request $request, string $id)
     {
-        FairProgramme::whereId($id)->update(['is_active' => $request->checked]);
+        FairProgrammeGallery::whereId($id)->update(['is_active' => $request->checked]);
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }

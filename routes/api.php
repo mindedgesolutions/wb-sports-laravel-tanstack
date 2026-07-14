@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\Sports\HomepageSliderController;
 use App\Http\Controllers\Api\Sports\KeyPersonnelController;
 use App\Http\Controllers\Api\Sports\NewsScrollController;
 use App\Http\Controllers\Api\Sports\PhotoGalleryController;
+use App\Http\Controllers\Api\PhotoGalleryController as ServicesPhotoGalleryController;
 use App\Http\Controllers\Api\Sports\PlayersAchievementController;
 use App\Http\Controllers\Api\Sports\RtiNoticeController;
 use App\Http\Controllers\Api\Sports\SpOrgStructureController;
@@ -190,6 +191,14 @@ Route::middleware(['cookie.auth:services', 'auth:api'])->prefix('services')->gro
     Route::prefix('youth-hostels/youth-hostels')->group(function () {
         Route::put('toggle/{id}', [YouthHostelController::class, 'toggle']);
         Route::apiResource('', YouthHostelController::class)
+            ->parameters(['' => 'id']);
+    });
+
+    // prefix: /services/photo-galleries/photo-galleries
+    Route::prefix('photo-galleries/photo-galleries')->group(function () {
+        Route::put('toggle/{id}', [ServicesPhotoGalleryController::class, 'toggle']);
+        Route::post('photos/{id}', [ServicesPhotoGalleryController::class, 'upload']);
+        Route::apiResource('', ServicesPhotoGalleryController::class)
             ->parameters(['' => 'id']);
     });
 
