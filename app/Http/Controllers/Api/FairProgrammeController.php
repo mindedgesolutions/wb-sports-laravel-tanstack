@@ -9,6 +9,7 @@ use App\Models\FairProgrammGalleryImage;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -18,6 +19,7 @@ class FairProgrammeController extends Controller
     public function index()
     {
         $search = request()->query('search');
+        $type = request()->query('type');
 
         $data = FairProgramme::withCount('images')
             ->with([
@@ -28,6 +30,7 @@ class FairProgrammeController extends Controller
             ->when($search, function ($query, $search) {
                 $query->where('title', 'ilike', "%{$search}%");
             })
+            ->where('gallery_type', $type)
             ->orderBy('id', 'desc')
             ->paginate(10);
 
@@ -63,6 +66,7 @@ class FairProgrammeController extends Controller
             'added_by' => Auth::id(),
             'organisation' => 'services',
             'event_date' => $request->eventDate ?? null,
+            'gallery_type' => $request->type
         ]);
 
         if ($request->file('coverImg') && $request->file('coverImg')->getSize() > 0) {
@@ -85,7 +89,9 @@ class FairProgrammeController extends Controller
             $data->cover_image = Storage::url($filePath);
             $data->save();
         }
-        return response()->json(['data' => $data], Response::HTTP_CREATED);
+        $updated = FairProgramme::with('images')->findOrFail($data->id);
+
+        return response()->json(['data' => $updated], Response::HTTP_CREATED);
     }
 
     // ------------------------------------

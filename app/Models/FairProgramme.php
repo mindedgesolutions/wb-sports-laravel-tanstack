@@ -17,7 +17,8 @@ class FairProgramme extends Model
         'organisation',
         'cover_image',
         'is_active',
-        'event_date'
+        'event_date',
+        'gallery_type'
     ];
 
     public function images()
