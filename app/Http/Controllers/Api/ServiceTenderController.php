@@ -14,11 +14,23 @@ class ServiceTenderController extends Controller
 {
     public function index()
     {
-        $data = ServiceTender::orderBy('tender_date', 'desc')
+        $search = request()->query('search');
+
+        $data = ServiceTender::when($search, function ($query, $search) {
+            $query->where('name', 'ilike', "%{$search}%");
+        })
+            ->orderBy('tender_date', 'desc')
             ->orderBy('id', 'desc')
             ->paginate(10);
 
-        return response()->json(['data' => $data], Response::HTTP_OK);
+        return response()->json([
+            'data' => $data->items(),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'total' => $data->total(),
+            ]
+        ], Response::HTTP_OK);
     }
 
     // -----------------------------------------
@@ -28,11 +40,11 @@ class ServiceTenderController extends Controller
         $data = ServiceTender::create([
             'name' => trim($request->name),
             'slug' => Str::slug($request->name),
-            'tender_date' => $request->tenderDate ? date('Y-m-d', strtotime($request->tenderDate)) : null,
+            'tender_date' => $request->tenderDate ?? null,
         ]);
 
-        if ($request->hasFile('file') && $request->file('file')[0]->getSize() > 0) {
-            $file = $request->file('file')[0];
+        if ($request->hasFile('newFile') && $request->file('newFile')->getSize() > 0) {
+            $file = $request->file('newFile');
             $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
             $directory = 'uploads/services/tenders';
             $fileOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -52,18 +64,18 @@ class ServiceTenderController extends Controller
 
     // -----------------------------------------
 
-    public function update(ServiceTenderRequest $request, $id)
+    public function update(ServiceTenderRequest $request, String $id)
     {
         $data = ServiceTender::findOrFail($id);
 
         ServiceTender::whereId($id)->update([
             'name' => trim($request->name),
             'slug' => Str::slug($request->name),
-            'tender_date' => $request->tenderDate ? date('Y-m-d', strtotime($request->tenderDate)) : null,
+            'tender_date' => $request->tenderDate ?? null,
         ]);
 
-        if ($request->hasFile('file') && $request->file('file')[0]->getSize() > 0) {
-            $file = $request->file('file')[0];
+        if ($request->hasFile('newFile') && $request->file('newFile')->getSize() > 0) {
+            $file = $request->file('newFile');
             $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
             $directory = 'uploads/services/tenders';
             $fileOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -93,14 +105,22 @@ class ServiceTenderController extends Controller
 
     public function destroy(string $id)
     {
-        //
+        $data = ServiceTender::findOrFail($id);
+        $filePath = str_replace('/storage', '', $data->file_path);
+
+        if (Storage::disk('public')->exists($filePath)) {
+            Storage::disk('public')->delete($filePath);
+        }
+        ServiceTender::where('id', $id)->delete();
+
+        return response()->json(['message' => 'success'], Response::HTTP_OK);
     }
 
     // -----------------------------------------
 
-    public function activate(Request $request, $id)
+    public function toggle(Request $request, String $id)
     {
-        ServiceTender::whereId($id)->update(['is_active' => $request->is_active]);
+        ServiceTender::whereId($id)->update(['is_active' => $request->checked]);
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }

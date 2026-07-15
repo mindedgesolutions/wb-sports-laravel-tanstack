@@ -194,10 +194,11 @@ Route::middleware(['cookie.auth:services', 'auth:api'])->prefix('services')->gro
             ->parameters(['' => 'id']);
     });
 
-    Route::apiResource('e-tenders', ServiceTenderController::class)->except(['show', 'update']);
-    Route::controller(ServiceTenderController::class)->prefix('e-tenders')->group(function () {
-        Route::post('update/{id}', 'update');
-        Route::put('activate/{id}', 'activate');
+    // prefix: /services/e-tenders/e-tenders
+    Route::prefix('e-tenders/e-tenders')->group(function () {
+        Route::put('toggle/{id}', [ServiceTenderController::class, 'toggle']);
+        Route::apiResource('', ServiceTenderController::class)
+            ->parameters(['' => 'id']);
     });
 });
 // Services app routes end -------------------------------

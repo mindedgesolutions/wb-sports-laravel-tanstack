@@ -15,15 +15,6 @@ class ServiceTenderRequest extends FormRequest
         return true;
     }
 
-    public function prepareForValidation()
-    {
-        if ($this->tenderDate) {
-            $this->merge([
-                'tenderDate' => Date::createFromFormat('d/m/Y', $this->tenderDate)
-            ]);
-        }
-    }
-
     public function rules(): array
     {
         return [
@@ -36,8 +27,7 @@ class ServiceTenderRequest extends FormRequest
                 }
             }],
             'tenderDate' => ['nullable'],
-            'file' => [Rule::requiredIf(!$this->id), 'file', 'array'],
-            'file.*' => [Rule::requiredIf(!$this->id), 'file', 'max:5120'],
+            'newFile' => [Rule::requiredIf(!$this->id), 'file', 'max:5120'],
         ];
     }
 
@@ -46,7 +36,7 @@ class ServiceTenderRequest extends FormRequest
         return [
             'name' => 'Tender title',
             'tenderDate' => 'Tender date',
-            'file' => 'File',
+            'newFile' => 'File',
         ];
     }
 
