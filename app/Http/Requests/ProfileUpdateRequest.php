@@ -15,16 +15,10 @@ class ProfileUpdateRequest extends FormRequest
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
             'name' => 'required|max:255|min:3',
-            'email' => 'required|email|max:255|unique:users,email,' . $this->user()->id,
             'mobile' => [
                 'nullable',
                 'numeric',
@@ -33,14 +27,15 @@ class ProfileUpdateRequest extends FormRequest
                     $query->where('user_id', '!=', $this->user()->id);
                 })
             ],
-            'profileImg' => 'nullable|image|file|mimes:jpeg,png,jpg,webp|max:100',
+            'password' => ['nullable', 'min:8', 'max:16', 'confirmed'],
+            'newImg' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
         ];
     }
 
     public function attributes()
     {
         return [
-            'profileImg' => 'profile image',
+            'newImg' => 'profile image',
         ];
     }
 
@@ -50,14 +45,12 @@ class ProfileUpdateRequest extends FormRequest
             '*.required' => ':Attribute is required',
             '*.max' => ':Attribute must not exceed 255 characters',
             '*.min' => ':Attribute must be at least 3 characters',
-            'email.email' => 'Invalid email',
-            'email.unique' => 'Email already exists',
             'mobile.numeric' => 'Mobile number must be numeric',
             'mobile.digits' => 'Mobile number must be 10 digits',
             'mobile.unique' => 'Mobile number already exists',
-            'profileImg.image' => 'Profile image must be an image',
-            'profileImg.mimes' => 'Invalid file type. Allowed: jpeg, png, jpg, webp',
-            'profileImg.max' => 'File size must be less than 100 KB',
+            'newImg.image' => 'Profile image must be an image',
+            'newImg.mimes' => 'Invalid file type. Allowed: jpeg, png, jpg, webp',
+            'newImg.max' => 'File size must be less than 100 KB',
         ];
     }
 }

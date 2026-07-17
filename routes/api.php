@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\MountainCourseController;
 use App\Http\Controllers\Api\MountainGeneralBodyController;
 use App\Http\Controllers\Api\NewsEventsController;
 use App\Http\Controllers\Api\OrganisationChartController;
+use App\Http\Controllers\Api\ServicesHomepageScrollerController;
 use App\Http\Controllers\Api\ServiceTenderController;
 use App\Http\Controllers\Api\ServiceWebsiteController;
 use App\Http\Controllers\Api\Sports\AchievementController;
@@ -71,7 +72,6 @@ Route::middleware(['cookie.auth:services', 'auth:api'])->prefix('services')->gro
         // prefix: /services/auth
         Route::post('logout/{organisation}', 'logout');
         Route::get('me', 'me');
-        Route::post('change-password', 'changePassword');
         Route::post('update', 'profileUpdate');
     });
 
@@ -200,6 +200,14 @@ Route::middleware(['cookie.auth:services', 'auth:api'])->prefix('services')->gro
         Route::apiResource('', ServiceTenderController::class)
             ->parameters(['' => 'id']);
     });
+
+    // prefix: /services/homepage-scroller/homepage-scroller
+    Route::prefix('homepage-scroller/homepage-scroller')->group(function () {
+        Route::put('toggle/{id}', [ServicesHomepageScrollerController::class, 'toggle']);
+        Route::apiResource('', ServicesHomepageScrollerController::class)
+            ->parameters(['' => 'id'])
+            ->except(['show']);
+    });
 });
 // Services app routes end -------------------------------
 
@@ -237,7 +245,6 @@ Route::middleware(['cookie.auth:sports', 'auth:api'])->prefix('sports')->group(f
         // prefix: /sports/auth
         Route::post('logout/{organisation}', 'logout');
         Route::get('me', 'me');
-        Route::post('change-password', 'changePassword');
         Route::post('update', 'profileUpdate');
     });
 

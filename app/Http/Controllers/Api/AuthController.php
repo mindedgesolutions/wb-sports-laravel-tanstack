@@ -353,42 +353,8 @@ class AuthController extends Controller
     public function me()
     {
         $user = Auth::user();
+
         return UserResource::make($user);
-    }
-
-    // --------------------------------------------
-
-    public function changePassword(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'oldPassword' => 'required',
-            'newPassword' => 'required|min:6',
-            'confirmPassword' => 'required|same:newPassword',
-        ], [
-            'oldPassword.required' => 'Old password is required',
-            'newPassword.required' => 'New password is required',
-            'newPassword.min' => 'New password must be at least 6 characters',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        $user = Auth::user();
-        $prevPassword = User::where('id', $user->id)->value('password');
-
-        if (!password_verify($request->oldPassword, $user->password)) {
-            return response()->json(['errors' => ['oldPassword' => ['Old password is incorrect']]], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        if (password_verify($request->newPassword, $prevPassword)) {
-            return response()->json(['errors' => ['newPassword' => ['New password cannot be the same as the previous password']]], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        $newPassword = bcrypt($request->newPassword);
-        User::where('id', $user->id)->update(['password' => $newPassword]);
-
-        return response()->json(['message' => 'success'], Response::HTTP_OK);
     }
 
     // --------------------------------------------
@@ -399,9 +365,22 @@ class AuthController extends Controller
             DB::beginTransaction();
 
             $user = Auth::user();
+            $details = UserDetail::where('user_id', $user->id)->first();
 
-            if ($request->hasFile('profileImg') && $request->file('profileImg')->getSize() > 0) {
-                $file = $request->file('profileImg');
+            User::whereId($user->id)->update([
+                'name' => trim($request->name),
+            ]);
+
+            if ($request->password) {
+                $enc = bcrypt($request->password);
+
+                User::whereId($user->id)->update([
+                    'password' => $enc
+                ]);
+            }
+
+            if ($request->hasFile('newImg') && $request->file('newImg')->getSize() > 0) {
+                $file = $request->file('newImg');
                 $filename = Str::random(10) . time() . '-' . $file->getClientOriginalName();
                 $directory = 'uploads/profiles';
 
@@ -409,26 +388,19 @@ class AuthController extends Controller
                     Storage::disk('public')->makeDirectory($directory);
                 }
 
-                if ($user) {
-                    $deletePath = str_replace('/storage', '', $user->userDetails->profile_img);
+                if ($details->profile_img) {
+                    $deletePath = str_replace('/storage', '', $details->profile_img);
 
                     if (Storage::disk('public')->exists($deletePath)) {
                         Storage::disk('public')->delete($deletePath);
                     }
                 }
-
                 $filePath = $file->storeAs($directory, $filename, 'public');
+
+                UserDetail::where('user_id', $user->id)->update([
+                    'profile_img' => Storage::url($filePath),
+                ]);
             }
-
-            User::where('id', $user->id)->update([
-                'name' => trim($request->name),
-                'email' => $request->email,
-            ]);
-
-            UserDetail::where('user_id', $user->id)->update([
-                'mobile' => $request->mobile,
-                'profile_img' => $request->hasFile('profileImg') ? Storage::url($filePath) : $user->userDetails->profile_img ?? null,
-            ]);
 
             DB::commit();
             return response()->json(['message' => 'success'], Response::HTTP_OK);
