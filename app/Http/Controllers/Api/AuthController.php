@@ -301,8 +301,9 @@ class AuthController extends Controller
             $body = 'Click the link below to reset your password:';
             $link = 'https://172.25.150.159/' . $domain . '/cms/reset-password/' . Crypt::encrypt($request->email);
             $subject = 'Reset Password - ' . $fromName;
+            Log::info($link);
 
-            Mail::to($toEmail)->send(new ResetPassword($fromEmail, $fromName, $body, $link, $subject));
+            // Mail::to($toEmail)->send(new ResetPassword($fromEmail, $fromName, $body, $link, $subject));
 
             DB::commit();
 
@@ -319,31 +320,28 @@ class AuthController extends Controller
     public function resetPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'newPassword' => 'required|min:6',
-            'confirmPassword' => 'required|min:6',
+            'password' => ['required', 'min:6', 'confirmed'],
+            'password_confirmation' => ['required'],
         ], [
             '*.required' => ':Attribute is required',
             '*.min' => ':Attribute must be at least 6 characters',
         ], [
-            'newPassword' => 'new password',
-            'confirmPassword' => 'confirm password',
+            'password' => 'password',
+            'password_confirmation' => 'confirm password',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if ($request->newPassword !== $request->confirmPassword) {
-            return response()->json(['errors' => ['confirmPassword' => ['Passwords do not match']]], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
         $email = Crypt::decrypt($request->email);
         $prevPassword = User::where('email', $email)->value('password');
-        if (password_verify($request->newPassword, $prevPassword)) {
-            return response()->json(['errors' => ['newPassword' => ['New password cannot be the same as the previous password']]], Response::HTTP_UNPROCESSABLE_ENTITY);
+
+        if (password_verify($request->password, $prevPassword)) {
+            return response()->json(['errors' => ['password_confirmation' => ['New password cannot be the same as the previous password']]], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        User::where('email', $email)->update(['password' => bcrypt($request->newPassword)]);
+        User::where('email', $email)->update(['password' => bcrypt($request->password)]);
 
         return response()->json(['message' => 'success'], Response::HTTP_OK);
     }
